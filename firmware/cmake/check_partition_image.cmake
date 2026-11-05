@@ -1,0 +1,8 @@
+if(NOT EXISTS "${IMAGE}")
+    message(FATAL_ERROR "Partition image is missing: ${IMAGE}")
+endif()
+math(EXPR capacity "${PARTITION_SIZE}")
+file(SIZE "${IMAGE}" actual)
+if(actual GREATER capacity)
+    message(FATAL_ERROR "${IMAGE}: ${actual} bytes exceeds partition capacity ${capacity}")
+endif()

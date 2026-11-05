@@ -1,0 +1,10 @@
+# AtomS3R ESP32-S3-PICO-1-N8R8: 8MB flash (DLS-156 §5)。
+# Name,     Type, SubType, Offset,   Size,     Flags
+nvs,        data, nvs,     0x9000,   0x5000,
+phy_init,   data, phy,     0xe000,   0x1000,
+factory,    app,  factory, 0x10000,  0x1C0000,
+model,      data, 0x40,    0x1D0000, 0x170000,
+dict,       data, 0x41,    0x340000, 0x2E0000,
+userdict,   data, 0x42,    0x620000, 0x10000,
+stt32w,     data, 0x43,    0x630000, 0x193000,
+littlefs,   data, littlefs,0x7C3000, 0x3D000,

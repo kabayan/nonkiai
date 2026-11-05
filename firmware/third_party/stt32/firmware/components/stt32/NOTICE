@@ -1,0 +1,92 @@
+stt32
+Copyright 2026 adlib ltd.
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+========================================================================
+Third-party components
+========================================================================
+
+------------------------------------------------------------------------
+1. ESP-IDF v5.4.4 (esp_partition, heap, log, esp_timer, esp_err)
+------------------------------------------------------------------------
+Use:       Runtime components of the firmware build.
+License:   Apache License, Version 2.0
+Copyright: Copyright Espressif Systems (Shanghai) CO LTD
+URL:       https://github.com/espressif/esp-idf
+
+------------------------------------------------------------------------
+2. esp-dsp 1.8.0
+------------------------------------------------------------------------
+Use:       FFT and int16 FIR routines (managed component espressif/esp-dsp).
+License:   Apache License, Version 2.0
+Copyright: Copyright Espressif Systems (Shanghai) PTE LTD / CO LTD, as stated
+           in the header of each source file under
+           firmware/managed_components/espressif__esp-dsp/ (for example
+           "Copyright 2018-2019 Espressif Systems (Shanghai) PTE LTD" and
+           "SPDX-FileCopyrightText: 2018-2025 Espressif Systems (Shanghai) CO LTD").
+URL:       https://github.com/espressif/esp-dsp
+
+------------------------------------------------------------------------
+3. FreeRTOS-Kernel (bundled with ESP-IDF v5.4.4)
+------------------------------------------------------------------------
+Use:       Real-time kernel used through ESP-IDF.
+License:   MIT License
+Copyright: The LICENSE.md of FreeRTOS-Kernel carries no copyright line; the
+           kernel sources state, for example, "Copyright (C) 2021 Amazon.com,
+           Inc. or its affiliates. All Rights Reserved."
+URL:       https://github.com/FreeRTOS/FreeRTOS-Kernel
+
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+------------------------------------------------------------------------
+4. TigreGotico/wakehubert-mel-bigru
+------------------------------------------------------------------------
+Revision:  5d514cf1908dc19f26cfb05e204aa74739c792c9
+Use:       Feature extractor, embedded in the firmware as int8 weights.
+License:   Apache License, Version 2.0
+URL:       https://huggingface.co/TigreGotico/wakehubert-mel-bigru
+Modified:  Quantized to int8 and embedded as weights; an 18-class classifier
+           trained on synthetic speech is added on top.
+
+------------------------------------------------------------------------
+5. facebook/hubert-base-ls960
+------------------------------------------------------------------------
+Use:       Teacher model used upstream to distill wakehubert-mel-bigru.
+License:   Apache License, Version 2.0
+URL:       https://huggingface.co/facebook/hubert-base-ls960
+
+------------------------------------------------------------------------
+6. Attribution of upstream training data
+------------------------------------------------------------------------
+The following datasets were used upstream to distill wakehubert-mel-bigru.
+
+- LibriSpeech (Panayotov et al.), licensed under CC BY 4.0
+  https://www.openslr.org/12/
+- Multilingual Spoken Words Corpus (MLCommons), licensed under CC BY 4.0
+  https://huggingface.co/datasets/MLCommons/ml_spoken_words
+
+------------------------------------------------------------------------
+7. Irodori-TTS (synthetic training data generation)
+------------------------------------------------------------------------
+The synthetic speech used to train the classifier was generated with
+Irodori-TTS (MIT License), https://github.com/Aratako/Irodori-TTS .
+Irodori-TTS itself is not included in this product.

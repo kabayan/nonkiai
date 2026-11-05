@@ -1,0 +1,25 @@
+/* notif/webui/control.css の画面幅・fieldset・ログ欄を流用。 */
+body { font-family: system-ui, sans-serif; margin: 0; line-height: 1.65; color: #243132; background: #fafbf9; }
+.container { max-width: 800px; margin: 1.5rem auto; padding: 0 1rem 2rem; }
+h1 { font-size: 1.6rem; margin-bottom: .4rem; }
+h2 { font-size: 1.05rem; margin: .8rem 0 .3rem; }
+fieldset { margin: 1.2rem 0; padding: 1rem; border: 1px solid #aab8ad; border-radius: 8px; background: white; min-width: 0; }
+legend { font-weight: 700; padding: 0 .4rem; }
+button { padding: .5rem .9rem; font-size: .95rem; margin: .25rem .3rem .25rem 0; cursor: pointer; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+#btnWrite, #btnReboot { background: #245846; color: white; border: 1px solid #245846; border-radius: 4px; }
+.row { margin: .4rem 0; }
+.note { color: #576460; font-size: .88rem; }
+.warn, .ng { color: #a52920; }
+.ok { color: #225c3e; }
+pre, #log { font-family: ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; background: #f1f4ef; padding: .6rem; font-size: .85rem; }
+#log { min-height: 10rem; max-height: 30rem; overflow: auto; margin-top: .4rem; }
+select { display: block; width: 100%; font-size: .95rem; padding: .5rem; margin: .3rem 0; }
+input[type=file] { display: block; max-width: 100%; margin: .5rem 0; }
+label { font-size: .95rem; }
+progress { width: 100%; height: 1.3rem; accent-color: #245846; }
+dl { display: grid; grid-template-columns: auto 1fr; gap: .3rem 1rem; font-size: .95rem; }
+dd { margin: 0; overflow-wrap: anywhere; }
+code { font-family: ui-monospace, monospace; overflow-wrap: anywhere; }
+[hidden] { display: none !important; }
+@media (max-width: 480px) { dl { display: block; } dd { margin-bottom: .6rem; } }

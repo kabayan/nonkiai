@@ -1,0 +1,55 @@
+# ---- AtomS3R (ESP32-S3-PICO-1-N8R8) ----
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# ---- USB Serial/JTAG をコンソールにする (AtomS3R は USB-Serial/JTAG 直結) ----
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# ---- NimBLE (notif firmware-idf の方針を踏襲) ----
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
+CONFIG_BT_NIMBLE_ROLE_CENTRAL=n
+CONFIG_BT_NIMBLE_ROLE_BROADCASTER=n
+CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
+CONFIG_BT_NIMBLE_GATT_CLIENT=n
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
+
+# notif DLS-367: RPA (Resolvable Private Address) を無効化して固定 Public
+# アドレスに戻す。RPA 有効だと Windows / ブラウザ側がアドバタイズを検出できない。
+CONFIG_BT_NIMBLE_HS_PVCY=n
+
+# 400Hz ストリーミングの帯域確保。notif 実績の MTU 247 / payload 244B に合わせる。
+CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU=247
+CONFIG_BT_NIMBLE_MSYS_1_BLOCK_COUNT=24
+
+# M5GFX / M5Unified が C++ 例外を前提にしている
+CONFIG_COMPILER_CXX_EXCEPTIONS=y
+CONFIG_COMPILER_CXX_EXCEPTIONS_EMG_POOL_SIZE=1024
+
+# 400Hz の IMU ポーリングに 1ms 刻みが要る (既定の 100Hz tick では 10ms 刻み)
+CONFIG_FREERTOS_HZ=1000
+# HTS エンジン初期化タスクおよび main_task 用のスタック拡張 (3.5KB既定 -> 16KB)
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
+
+# ---- sanoTTS-jp の合成を間に合わせる設定（sanoTTS-jp-2 の esp32/sdkconfig.defaults と boards/m5unified/sdkconfig.atoms3r を参照）----
+# コードを速度優先（-O2）でビルドする
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
+# D-cache の行を 64 B にする（I-cache 16 KB・D-cache 32 KB は既定のまま）。重みの読みが速くなる
+CONFIG_ESP32S3_DATA_CACHE_LINE_64B=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+# 1 発話の合成は数秒かかり、2 コアとも busy になる。sanoTTS-jp-2 の両方の板の設定と同じくタスク WDT を初期化しない
+CONFIG_ESP_TASK_WDT_INIT=n
+
+# ---- stt32 の周波数特性の補正（stt32 DLS-1069 / stt32 DLS-1081）----
+# マイクの特性を窓の切り出した区間にだけ FFT（overlap-save、長さ 1024）で補正する。esp-dsp が要る（main/idf_component.yml）
+CONFIG_STT32_WAKEHUBERT_EQ=y
+CONFIG_STT32_WAKEHUBERT_EQ_IMPL_FFT=y
+CONFIG_STT32_WAKEHUBERT_EQ_FFT_N=1024
+CONFIG_STT32_WAKEHUBERT_EQ_TRIM_FIRST=y

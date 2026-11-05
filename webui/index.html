@@ -1,0 +1,1453 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="blue-plush-bear.png" type="image/png">
+<title>のんきちゃんの設定</title>
+<style>
+  :root {
+    color-scheme: light;
+    --cream: #fffaf3;
+    --card: rgba(255,255,255,.88);
+    --pink: #ef7697;
+    --pink-dark: #c45174;
+    --pink-pale: #ffe5eb;
+    --yellow: #fff1bc;
+    --brown: #4c3540;
+    --muted: #8a707a;
+    --line: #f0d6da;
+    --ok: #4e9272;
+    --error: #bd5360;
+    --shadow: 0 16px 36px rgba(176, 92, 116, .13);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--brown);
+    background:
+      radial-gradient(circle at 9% 12%, rgba(255, 223, 164, .46) 0 36px, transparent 37px),
+      radial-gradient(circle at 91% 18%, rgba(246, 192, 207, .45) 0 52px, transparent 53px),
+      var(--cream);
+    font: 15px/1.6 ui-rounded, "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  }
+  button, input, select { font: inherit; }
+  button { cursor: pointer; }
+  button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity: .52; }
+  .page { width: min(100% - 28px, 980px); margin: 0 auto; padding: 28px 0 42px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark { width: 50px; height: 50px; border-radius: 18px; background: var(--pink-pale); padding: 8px; object-fit: contain; box-shadow: 0 8px 18px rgba(196,81,116,.12); }
+  .brand h1 { margin: 0; font-size: clamp(22px, 5vw, 32px); letter-spacing: .04em; line-height: 1.2; }
+  .brand p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+  .connect-box { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; justify-content: flex-end; }
+  .connection-state { font-size: 13px; color: var(--muted); }
+  .connection-state.ok { color: var(--ok); font-weight: 700; }
+  .connection-state.error { color: var(--error); font-weight: 700; }
+  .btn { border: 0; border-radius: 999px; padding: 10px 18px; color: var(--brown); background: #f8e9e2; box-shadow: 0 5px 12px rgba(140,83,96,.10); transition: transform .15s, box-shadow .15s; }
+  .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 16px rgba(140,83,96,.15); }
+  .btn.primary { background: var(--pink); color: #fff; font-weight: 700; }
+  .btn.soft { background: var(--yellow); }
+  .btn.small { padding: 7px 13px; font-size: 13px; }
+  .notice { display: none; margin: 0 0 16px; padding: 11px 14px; border-radius: 16px; background: #fff0ee; color: var(--error); }
+  .notice.show { display: block; }
+  .clock-card { margin: 0 0 18px; padding: 13px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); color: var(--pink-dark); font-size: clamp(15px, 3vw, 19px); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .weather-card { margin: 0 0 18px; padding: 13px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+  .weather-card h2 { margin: 0 0 3px; color: var(--pink-dark); font-size: clamp(15px, 3vw, 19px); }
+  .weather-card p { margin: 0; }
+  .weather-days { font-weight: 700; }
+  .weather-note { color: var(--muted); font-size: 12px; }
+  .weather-note.error { color: var(--error); }
+  .weather-source { color: var(--pink-dark); }
+  .hero { display: grid; grid-template-columns: minmax(180px, 270px) 1fr; gap: clamp(18px, 4vw, 42px); align-items: center; margin-bottom: 18px; }
+  .bunny-wrap { position: relative; display: grid; place-items: center; min-height: 315px; padding: 18px; border-radius: 34px; background: linear-gradient(150deg, #fff1f3, #ffe7d7); box-shadow: var(--shadow); overflow: hidden; }
+  .bunny-wrap::after { content: ""; position: absolute; width: 170px; height: 22px; bottom: 24px; border-radius: 50%; background: rgba(206,91,119,.13); filter: blur(4px); }
+  .bunny { position: relative; z-index: 1; width: min(100%, 230px); height: auto; max-height: 279px; object-fit: contain; }
+  .result-card, .card { border: 1px solid rgba(240,214,218,.85); border-radius: 27px; background: var(--card); box-shadow: var(--shadow); }
+  .result-card { padding: clamp(22px, 5vw, 38px); min-height: 315px; display: flex; flex-direction: column; justify-content: center; }
+  .eyebrow { margin: 0 0 8px; color: var(--pink-dark); font-size: 13px; font-weight: 700; letter-spacing: .08em; }
+  .speech { margin: 0 0 15px; padding: 14px 16px; background: #fff8fc; border-radius: 16px; overflow-wrap: anywhere; }
+  .speech-text { margin: 0; color: var(--brown); font-size: clamp(24px, 4.5vw, 38px); font-weight: 800; line-height: 1.35; white-space: pre-wrap; }
+  .speech-motion { display: block; margin-top: 9px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+  .motion-summary { min-width: 0; }
+  .result-title { margin: 0; min-height: 1.35em; font-size: clamp(15px, 2.3vw, 22px); font-weight: 700; line-height: 1.35; letter-spacing: .02em; color: var(--pink-dark); overflow-wrap: anywhere; }
+  .result-detail { margin: 3px 0 0; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+  .result-bubble { margin-top: 22px; padding: 12px 15px; border-radius: 17px; background: var(--pink-pale); color: var(--pink-dark); font-weight: 700; }
+  .result-card.flash { animation: flash .65s ease-out; }
+  .posture-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 18px; padding: 15px 20px; }
+  .posture-label { margin: 0; color: var(--muted); font-size: 13px; }
+  .posture-value { margin: 1px 0 0; color: var(--pink-dark); font-size: clamp(24px, 5vw, 34px); font-weight: 800; line-height: 1.2; }
+  .posture-angle { min-width: 7em; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+  @keyframes flash { 0% { transform: scale(1); } 35% { transform: scale(1.018); box-shadow: 0 0 0 8px rgba(239,118,151,.12), var(--shadow); } 100% { transform: scale(1); } }
+  .grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: 18px; }
+  .card { padding: clamp(19px, 4vw, 28px); }
+  .card h2 { margin: 0 0 5px; font-size: 20px; }
+  .card-intro { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+  .field-label { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 7px; font-weight: 700; }
+  .counter { color: var(--muted); font-size: 12px; font-weight: 400; }
+  .name-input { width: 100%; border: 2px solid var(--line); border-radius: 15px; padding: 11px 14px; color: var(--brown); background: #fffdfb; outline: none; }
+  .name-input:focus { border-color: var(--pink); box-shadow: 0 0 0 4px rgba(239,118,151,.13); }
+  .preview { margin: 14px 0 18px; padding: 13px 15px; border-radius: 16px; background: #fff7d9; color: #71534d; }
+  .preview small { display: block; margin-bottom: 3px; color: var(--muted); font-size: 12px; }
+  .preview strong { font-size: 17px; }
+  .actions { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
+  .ir-hold-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 18px 0 12px; }
+  .ir-hold-fields label { display: grid; gap: 4px; font-size: 13px; font-weight: 700; }
+  .ir-hold-fields select, .ir-hold-fields input { width: 100%; min-width: 0; border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; color: var(--brown); background: #fffdfb; }
+  .save-state { min-height: 1.5em; color: var(--muted); font-size: 13px; }
+  .save-state.ok { color: var(--ok); }
+  .save-state.error { color: var(--error); }
+  .volume-row { display: flex; align-items: center; gap: 12px; margin-top: 22px; }
+  .volume-row label { font-weight: 700; white-space: nowrap; }
+  .volume-row input { min-width: 110px; width: 100%; accent-color: var(--pink); }
+  .volume-value { min-width: 42px; color: var(--pink-dark); font-variant-numeric: tabular-nums; text-align: right; }
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-top: 20px; font-weight: 700; }
+  .toggle-row input { width: 20px; height: 20px; accent-color: var(--pink); }
+  .select-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 20px; font-weight: 700; }
+  .select-row select { min-width: 0; border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; color: var(--brown); background: #fffdfb; }
+  .hint { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+  .links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 19px; padding-left: 2px; }
+  .links a { color: var(--pink-dark); font-size: 13px; text-decoration: none; }
+  .links a:hover { text-decoration: underline; }
+  .footer { margin-top: 20px; color: var(--muted); font-size: 12px; text-align: center; }
+  @media (max-width: 700px) {
+    .page { width: min(100% - 20px, 560px); padding-top: 18px; }
+    .topbar { align-items: flex-start; flex-direction: column; }
+    .connect-box { width: 100%; justify-content: flex-start; }
+    .notice { margin-bottom: 10px; padding: 8px 11px; font-size: 12px; line-height: 1.45; }
+    /* Keep the mascot and the live result in one short mobile card. */
+    .hero {
+      grid-template-columns: minmax(88px, 30%) minmax(0, 1fr);
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid rgba(240,214,218,.85);
+      border-radius: 25px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+    .bunny-wrap {
+      min-height: 142px;
+      padding: 8px;
+      border-radius: 19px;
+      box-shadow: none;
+    }
+    .bunny { width: min(100%, 108px); max-height: 126px; }
+    .result-card {
+      min-height: 142px;
+      padding: 12px 10px;
+      border: 0;
+      border-radius: 19px;
+      background: transparent;
+      box-shadow: none;
+    }
+    .eyebrow { margin-bottom: 4px; font-size: 11px; }
+    .speech { margin-bottom: 10px; padding: 10px 11px; }
+    .speech-text { font-size: clamp(20px, 5.5vw, 30px); line-height: 1.3; }
+    .speech-motion { margin-top: 7px; font-size: 11px; }
+    .result-title { font-size: clamp(14px, 4vw, 18px); line-height: 1.3; }
+    .result-detail { margin-top: 2px; font-size: 12px; }
+    .result-bubble { margin-top: 9px; padding: 8px 10px; font-size: 12px; line-height: 1.4; }
+    .card { padding: 16px; }
+    .card-intro { margin-bottom: 11px; line-height: 1.45; }
+    .name-card .hint { margin-top: 5px; }
+    .name-card .preview { margin: 10px 0 12px; padding: 10px 12px; }
+    .name-card .preview strong { font-size: 16px; }
+    .volume-row input { height: 44px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 340px) {
+    .page { width: min(100% - 16px, 560px); }
+    .hero { grid-template-columns: 82px minmax(0, 1fr); }
+    .bunny-wrap, .result-card { min-height: 146px; }
+    .bunny { max-height: 130px; }
+    .result-card { padding-left: 8px; padding-right: 8px; }
+    .speech-text { font-size: clamp(18px, 5.5vw, 26px); }
+    .result-detail { font-size: 11px; }
+    .result-bubble { margin-top: 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-mark" src="blue-plush-bear.png" alt="青い編みぐるみのくま">
+      <div><h1>のんきちゃん</h1><p>なまえをつけて、いっしょに遊ぼう</p></div>
+    </div>
+    <div class="connect-box">
+      <span id="connectionState" class="connection-state">つないでね</span>
+      <button id="connectButton" class="btn primary" type="button">つなぐ</button>
+      <button id="disconnectButton" class="btn small" type="button" disabled>切断</button>
+    </div>
+  </header>
+  <nav class="links" aria-label="ほかの画面"><a href="model-flasher.html">ファームを書き込む</a><a href="settings.html">設定（モード・発話）</a><a href="record.html">IMU 収録</a></nav>
+  <p id="currentMode" class="preview" role="status"><strong>モード：未接続</strong></p>
+
+  <div id="browserNotice" class="notice">この画面は Web Bluetooth に対応した Chromium 系ブラウザの HTTPS または localhost で開いてください。</div>
+  <p id="timeState" class="clock-card" aria-live="polite">本体の時刻：未確認（接続すると時刻を合わせます）</p>
+  <section class="weather-card" aria-live="polite">
+    <h2>東京の天気予報</h2>
+    <p id="weatherDays" class="weather-days">今日：わからないの ／ 明日：わからないの</p>
+    <p id="weatherNote" class="weather-note">接続すると2日分を更新します。</p>
+    <p class="weather-note">日単位の予報。出典：<a class="weather-source" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a></p>
+  </section>
+
+  <section class="hero" aria-live="polite">
+    <div class="bunny-wrap"><img class="bunny" src="blue-plush-bear.png" alt="青い編みぐるみのくま"></div>
+    <div id="resultCard" class="result-card">
+      <p class="eyebrow">さいきんの動き</p>
+      <div class="speech">
+        <p id="speechText" class="speech-text">動いたときのお話をここに表示します。</p>
+        <small id="speechMotion" class="speech-motion">動きとセリフ</small>
+        <p id="listenResult" class="speech-motion">1回たたくと、3秒間お話を聞くよ。</p>
+      </div>
+      <div class="motion-summary">
+        <h2 id="resultTitle" class="result-title">つないでね</h2>
+        <p id="resultDetail" class="result-detail">本体とつながると、認識した動きをここに表示します。</p>
+      </div>
+      <div id="resultBubble" class="result-bubble">本体をつなぐと、動きに反応するよ。</div>
+    </div>
+  </section>
+
+  <section class="card posture-card" aria-live="polite">
+    <div>
+      <p class="posture-label">いまの姿勢（ジェスチャとは別判定）</p>
+      <p id="postureValue" class="posture-value">判定待ち</p>
+    </div>
+    <div id="postureAngle" class="posture-angle">角度 --°</div>
+  </section>
+
+  <section class="grid">
+    <div class="card name-card">
+      <h2>おなまえ</h2>
+      <p class="card-intro">保存すると、本体の自己紹介に使われます。</p>
+      <label class="field-label" for="nameInput"><span>呼びたい名前</span><span id="nameCounter" class="counter">0 / 10文字</span></label>
+      <input id="nameInput" class="name-input" type="text" inputmode="text" autocomplete="off" value="のんきちゃん" aria-describedby="nameHelp">
+      <p id="nameHelp" class="hint">1〜10文字。前後の空白は整えます。</p>
+      <div class="preview"><small>自己紹介の一例（1回タップで10種類からランダム）</small><strong id="previewText">私はのんきちゃん。遊んでね</strong></div>
+      <p class="hint">2回タップでは「ねえ、知ってる。」から始まる豆知識をお話しするよ。</p>
+      <div class="actions">
+        <button id="saveNameButton" class="btn primary" type="button" disabled>保存する</button>
+        <button id="listenButton" class="btn soft" type="button" disabled>声をきく</button>
+        <span id="saveState" class="save-state">本体につなぐと保存できます。</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>音量</h2>
+      <p class="card-intro">本体の声の大きさです。動かすとすぐ反映されます。</p>
+      <div class="volume-row">
+        <label for="volumeInput">声</label>
+        <input id="volumeInput" type="range" min="0" max="255" value="96" disabled>
+        <span id="volumeValue" class="volume-value">96</span>
+      </div>
+      <p id="volumeState" class="hint">本体につなぐと音量を読み込みます。</p>
+      <label class="toggle-row"><input id="swapNodTiltInput" type="checkbox" checked disabled><span>うなずきと首かしげを交換</span></label>
+      <p id="swapNodTiltState" class="hint">本体につなぐと設定を読み込みます。</p>
+      <label class="select-row" for="listenModeInput"><span>お話の聞きとりモード</span>
+        <select id="listenModeInput" disabled><option value="0" selected>ぬいぐるみ</option><option value="1">おもちゃ</option></select></label>
+      <p id="listenModeState" class="hint">本体につなぐと設定を読み込みます。</p>
+      <div class="links">
+        <a href="settings.html">設定（モード・発話）へ →</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="irTestSection" class="card" hidden>
+    <h2>IRテスト送信</h2>
+    <p class="card-intro">外付けIRユニットから、前進・後退は5回、左・右は4回、本フレームを続けて送ります。</p>
+    <div class="actions">
+      <button id="irForwardButton" class="btn soft" type="button" disabled>前進</button>
+      <button id="irBackButton" class="btn soft" type="button" disabled>後退</button>
+      <button id="irLeftButton" class="btn soft" type="button" disabled>左</button>
+      <button id="irRightButton" class="btn soft" type="button" disabled>右</button>
+    </div>
+    <div class="ir-hold-fields" role="group" aria-label="長押しテストの設定">
+      <label>方向<select id="irHoldDirection" disabled><option value="0">前進</option><option value="1">後退</option><option value="2">右</option><option value="3">左</option></select></label>
+      <label>方式<select id="irHoldMode" disabled><option value="0">NECリピート</option><option value="1" selected>本フレーム反復</option></select></label>
+      <label>回数（先頭を含む）<input id="irHoldCount" type="number" min="1" max="30" step="1" value="5" required disabled></label>
+      <label>間隔（ms）<input id="irHoldInterval" type="number" min="108" max="500" step="1" value="108" required disabled></label>
+    </div>
+    <button id="irHoldButton" class="btn soft" type="button" disabled>長押しテストを送信</button>
+    <p id="irTestState" class="hint" role="status">本体につなぐとテスト送信できます。</p>
+  </section>
+
+  <section class="card">
+    <h2>好きな文を話す</h2>
+    <label for="sayInput">話す文</label>
+    <input id="sayInput" class="name-input" type="text" aria-describedby="sayCount">
+    <p id="sayCount" class="hint" role="status">残り126バイト</p>
+    <button id="sayButton" class="btn primary" type="button" disabled>話す</button>
+    <p id="sayState" class="hint" role="status"></p>
+  </section>
+  <section id="toyReplySection" class="card" hidden>
+    <h2>おもちゃへの返事</h2>
+    <p class="hint">標準の文は毎回おまかせで選びます。空欄にすると、返事を話さずにIRを送ります。各63バイトまで。</p>
+    <p><label for="toy_forward">前進</label><input id="toy_forward" class="name-input" type="text" disabled aria-describedby="toy_forwardCount"><small id="toy_forwardCount"></small> <button id="toy_forwardReset" class="btn small" type="button" disabled>標準の言い回し（おまかせ）に戻す</button></p>
+    <p><label for="toy_back">後退</label><input id="toy_back" class="name-input" type="text" disabled aria-describedby="toy_backCount"><small id="toy_backCount"></small> <button id="toy_backReset" class="btn small" type="button" disabled>標準の言い回し（おまかせ）に戻す</button></p>
+    <p><label for="toy_right">右</label><input id="toy_right" class="name-input" type="text" disabled aria-describedby="toy_rightCount"><small id="toy_rightCount"></small> <button id="toy_rightReset" class="btn small" type="button" disabled>標準の言い回し（おまかせ）に戻す</button></p>
+    <p><label for="toy_left">左</label><input id="toy_left" class="name-input" type="text" disabled aria-describedby="toy_leftCount"><small id="toy_leftCount"></small> <button id="toy_leftReset" class="btn small" type="button" disabled>標準の言い回し（おまかせ）に戻す</button></p>
+    <button id="saveToyReplies" class="btn primary" type="button" disabled>返事を保存</button>
+    <p id="toyReplyState" class="hint" role="status">本体につなぐと設定を読み込みます。</p>
+  </section>
+
+  <p class="footer">本体から動きが届くと、ここに大きく表示します。</p>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  const SERVICE_UUID = 'a1b20000-5d3f-4e8a-9c21-7f6e5d4c3b2a';
+  const CTRL_UUID = 'a1b20002-5d3f-4e8a-9c21-7f6e5d4c3b2a';
+  const STATUS_UUID = 'a1b20003-5d3f-4e8a-9c21-7f6e5d4c3b2a';
+  const INFO_UUID = 'a1b20004-5d3f-4e8a-9c21-7f6e5d4c3b2a';
+  const CTRL_VOICE_CFG_SET = 0x10;
+  const CTRL_VOICE_CFG_LOAD = 0x12;
+  const STATUS_VOICE_CFG_ITEM = 0x90;
+  const TOY_KEYS = ['toy_forward', 'toy_back', 'toy_right', 'toy_left'];
+  const TOY_DEFAULTS = ['まえにすすんで！', 'うしろにさがって！', 'みぎにまわって！', 'ひだりにまわって！'];
+  const toyLoaded = new Set();
+  let toySaving = false;
+  let saySending = false;
+  let configSaveChain = Promise.resolve();
+  const CTRL_VOICE_CFG_SAVE = 0x11;
+  const CTRL_VOICE_SAY = 0x13;
+  const CTRL_VOICE_SET_VOL = 0x14;
+  const CTRL_NAME_SAVE = 0x18;
+  const CTRL_NAME_LOAD = 0x19;
+  const CTRL_SWAP_NOD_TILT = 0x1A;
+  const CTRL_TIME_SYNC = 0x1B;
+  const CTRL_WEATHER_SET = 0x1C;
+  const CTRL_WEATHER_GET = 0x1D;
+  const CTRL_IR_TEST = 0x21;
+  const CTRL_IR_HOLD = 0x23;
+  const STATUS_IR_RESULT = 0x9A;
+  const CTRL_LISTEN_MODE = 0x25;
+  const STATUS_LISTEN_MODE = 0x9C;
+  let listenMode = null; // 本体が最後に通知した認識モード。保存に失敗したときの戻し先
+  const LISTEN_MODE_TEXT = [
+    'ぬいぐるみ: 話しかけに返事をします。IRは送りません。',
+    'おもちゃ: 前進・後退・右・左を聞き取ると、返事を話し終えたあとに本フレームを前進・後退は5回、右・左は4回送ります。',
+  ];
+  const IR_LABELS = ['前進', '後退', '右', '左'];
+  const IR_DEFAULT_REPEATS = [5, 5, 4, 4]; // DLS-147; matches nk_ir_default_repeat.
+  const IR_BUTTONS = ['irForwardButton', 'irBackButton', 'irRightButton', 'irLeftButton'];
+  const IR_HOLD_FIELDS = ['irHoldDirection', 'irHoldMode', 'irHoldCount', 'irHoldInterval', 'irHoldButton'];
+  const STATUS_MOTION = 0x87;
+  const STATUS_DETECTOR_STATE = 0x88;
+  const STATUS_MOTION_SPEECH = 0x89;
+  const STATUS_INTENT = 0x8A;
+  const INTENT_LABELS = ['前進', '後退', '右', '左', '名前', '天気', 'なんじ', '元気', 'ほめる',
+    'はい', 'いいえ', 'おはよう', 'おやすみ', '上', '下', '停止', '開始'];
+  const STATUS_VOICE_VOL = 0x91;
+  const STATUS_NAME = 0x92;
+  const STATUS_NAME_RESULT = 0x93;
+  const STATUS_POSTURE = 0x94;
+  const STATUS_SWAP_NOD_TILT = 0x95;
+  const STATUS_TIME_RESULT = 0x96;
+  const STATUS_WEATHER_RESULT = 0x97;
+  const STATUS_WEATHER_STATE = 0x98;
+  const NAME_OP_SAVE = 2;
+  const NAME_OP_LOAD = 3;
+  const NAME_OP_CONFIG_SAVE = 4;
+  const TIME_OP_SYNC = 5;
+  const WEATHER_OP_SET = 6;
+  const WEATHER_OP_GET = 7;
+  const WEATHER_API_URL = 'https://api.open-meteo.com/v1/forecast?latitude=35.6762&longitude=139.6503&daily=weather_code&timezone=Asia%2FTokyo&forecast_days=2';
+  const WEATHER_CODES = {
+    0: '晴れ', 1: 'おおむね晴れ', 2: '晴れとくもり', 3: 'くもり',
+    45: '霧', 48: '霧', 51: '霧雨', 53: '霧雨', 55: '霧雨',
+    56: '凍る霧雨', 57: '凍る霧雨', 61: '小雨', 63: '雨', 65: '強い雨',
+    66: '凍る雨', 67: '凍る雨', 71: '小雪', 73: '雪', 75: '強い雪', 77: '雪粒',
+    80: 'にわか雨', 81: 'にわか雨', 82: 'にわか雨', 85: 'にわか雪', 86: 'にわか雪',
+    95: '雷雨', 96: '雷雨とひょう', 99: '雷雨とひょう',
+  };
+  const TOKYO_DATE_FORMAT = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit',
+  });
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+
+  const $ = (id) => document.getElementById(id);
+  let device = null;
+  let server = null;
+  let ctrl = null;
+  let status = null;
+  let info = null;
+  let ctrlChain = Promise.resolve();
+  let nameParts = [];
+  let namePartTotal = 0;
+  let deviceName = '';
+  let savedName = 'のんきちゃん';
+  let pendingDisconnectMessage = '';
+  let volumeTimer = null;
+  let detectorState = null;
+  let pageReady = false;
+  let irPending = null;
+  let irRequestId = Date.now() >>> 0;
+  let lastMotionAt = 0;
+  let stateNotice = '';
+  let stateTimer = null;
+  let speechMotion = null;
+  let speechAssembly = null;
+  let timeBaseMs = -1;
+  let timeBaseTick = 0;
+  let timeTicker = null;
+  let connectionEpoch = 0;
+  let weatherAbort = null;
+  let weatherSaved = { today: null, tomorrow: null };
+  let weatherStateRead = false;
+  let weatherStateFailed = false;
+  let weatherNote = '接続すると2日分を更新します。';
+  let weatherNoteError = false;
+  let weatherNoteDate = null;
+  let weatherTicker = null;
+  const resultLabels = {
+    1: '1回たたいたよ', 2: '2回たたいたよ', 3: '3回たたいたよ',
+    4: 'うなずいたよ', 5: 'ゆらゆらしたよ', 6: 'くるっと180度',
+    7: '首をかしげたよ', 8: '見回したよ', 9: '準備中だよ',
+    10: '基準点を覚えたよ', 11: 'もう一度ためしてね', 12: 'おきたよ',
+  };
+  const resultDetails = {
+    1: 'トン、としたね。', 2: 'リズムが聞こえたよ。', 3: '次のセリフを聞いてね。',
+    4: 'こくん、としたね。', 5: 'ゆっくり揺れたね。', 6: '景色がくるっと変わったね。',
+    7: 'どっちかな、と考えたよ。', 8: 'まわりを見たよ。', 9: 'そのまま少し待ってね。',
+    10: 'これで動きを見つけやすくなったよ。', 11: 'もう一度、静かにたたいてね。', 12: 'おはよう。',
+  };
+  const waiters = new Map();
+
+  function setPassiveResult(title, detail, bubble) {
+    $('resultTitle').textContent = title;
+    $('resultDetail').textContent = detail;
+    $('resultBubble').textContent = bubble;
+  }
+
+  function setWaitingResult() {
+    setPassiveResult('動きを待ってるよ', '本体をやさしく動かしてみてね。', '本体から動きが届くよ。');
+  }
+
+  function scheduleStateRender(delay) {
+    clearTimeout(stateTimer);
+    stateTimer = setTimeout(() => {
+      stateTimer = null;
+      renderDetectorState();
+    }, Math.max(0, delay));
+  }
+
+  function renderDetectorState() {
+    if (!pageReady || !detectorState) return;
+    const { state, sleeping, suspended, voicePlaying } = detectorState;
+    let notice = null;
+    if (sleeping && state !== 2) {
+      notice = {
+        key: 'sleep',
+        title: 'おやすみ中だよ',
+        detail: '動きを休んでいるよ。',
+        bubble: '立てても起きないときは、3回タップして、声のあとも3秒静かにしてね。',
+      };
+    } else if (suspended || voicePlaying) {
+      notice = {
+        key: 'voice',
+        title: '声を出してるよ',
+        detail: '話し終わるまで少し待ってね。',
+        bubble: '声のあとで、また動きを見つけるよ。',
+      };
+    } else if (state === 1) {
+      notice = {
+        key: 'tap',
+        title: 'たたく回数を数えてるよ',
+        detail: '続けると、動きを決めるよ。',
+        bubble: 'たたいた後は少し待ってね。',
+      };
+    } else if (state === 2) {
+      notice = {
+        key: 'calibration',
+        title: '基準点を覚えてるよ',
+        detail: 'そのまま静かにしてね。',
+        bubble: '3秒ほど待ってね。',
+      };
+    } else if (state === 3) {
+      notice = {
+        key: 'gesture',
+        title: '動きを見てるよ',
+        detail: 'もう少しでわかるよ。',
+        bubble: 'そのまま動かしてね。',
+      };
+    }
+    if (notice) {
+      const elapsed = Date.now() - lastMotionAt;
+      if (elapsed < 2200) {
+        // Keep the latest gesture large for a moment. The state guidance can
+        // still explain sleep/voice/calibration in the smaller bubble.
+        stateNotice = '';
+        $('resultBubble').textContent = notice.bubble;
+        scheduleStateRender(2200 - elapsed + 1);
+        return;
+      }
+      if (stateNotice !== notice.key) setPassiveResult(notice.title, notice.detail, notice.bubble);
+      stateNotice = notice.key;
+      return;
+    }
+    $('resultBubble').textContent = lastMotionAt
+      ? '本体から届いた動きだよ。'
+      : '本体から動きが届くよ。';
+    if (stateNotice) {
+      stateNotice = '';
+      if (Date.now() - lastMotionAt > 2200) setWaitingResult();
+    }
+  }
+
+  function tokyoDates(now = Date.now()) {
+    const parts = Object.fromEntries(TOKYO_DATE_FORMAT.formatToParts(new Date(now))
+      .filter((part) => part.type === 'year' || part.type === 'month' || part.type === 'day')
+      .map((part) => [part.type, part.value]));
+    const today = `${parts.year}-${parts.month}-${parts.day}`;
+    const tomorrow = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1,
+      Number(parts.day) + 1)).toISOString().slice(0, 10);
+    return { today, tomorrow };
+  }
+
+  function parseWeatherDate(date) {
+    if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+    const year = Number(date.slice(0, 4));
+    const month = Number(date.slice(5, 7));
+    const day = Number(date.slice(8, 10));
+    if (year < 2000 || year > 2099 ||
+        new Date(Date.UTC(year, month - 1, day)).toISOString().slice(0, 10) !== date) return null;
+    return { date, year, month, day };
+  }
+
+  function validWeatherCode(code) {
+    return Number.isInteger(code) && Object.hasOwn(WEATHER_CODES, code);
+  }
+
+  function weatherForDate(date) {
+    return [weatherSaved.today, weatherSaved.tomorrow].find((item) => item?.date === date) || null;
+  }
+
+  function sameForecast(a, b) {
+    return a.today?.date === b.today?.date && a.today?.code === b.today?.code &&
+      a.tomorrow?.date === b.tomorrow?.date && a.tomorrow?.code === b.tomorrow?.code;
+  }
+
+  function renderWeather() {
+    const dates = tokyoDates();
+    const label = (date) => {
+      const item = weatherForDate(date);
+      if (item) return `${WEATHER_CODES[item.code]}（${date}）`;
+      if (weatherStateRead || !ctrl) return 'わからないの';
+      return weatherStateFailed ? '未確認' : '確認中…';
+    };
+    $('weatherDays').textContent = `今日：${label(dates.today)} ／ 明日：${label(dates.tomorrow)}`;
+    const crossedMidnight = weatherNoteDate && weatherNoteDate !== dates.today;
+    $('weatherNote').textContent = crossedMidnight
+      ? '日付が変わりました。接続し直すと明日分も更新します。' : weatherNote;
+    $('weatherNote').className = `weather-note${weatherNoteError && !crossedMidnight ? ' error' : ''}`;
+  }
+
+  function setWeatherNote(message, error = false) {
+    weatherNote = message;
+    weatherNoteError = error;
+    weatherNoteDate = tokyoDates().today;
+    renderWeather();
+  }
+
+  function setConnection(connected, message, ready = connected) {
+    const becameReady = connected && ready && !pageReady;
+    const state = $('connectionState');
+    state.textContent = message || (connected ? '接続済み' : 'つないでね');
+    state.className = `connection-state${connected ? ' ok' : ''}`;
+    $('connectButton').disabled = connected;
+    $('disconnectButton').disabled = !connected;
+    $('nameInput').disabled = connected && !ready;
+    $('saveNameButton').disabled = !connected || !ready;
+    $('listenButton').disabled = !connected || !ready;
+    $('volumeInput').disabled = !connected || !ready;
+    $('swapNodTiltInput').disabled = !connected || !ready;
+    $('listenModeInput').disabled = !connected || !ready;
+    pageReady = connected && ready;
+    if (!connected) {
+      listenMode = null;
+      toyLoaded.clear();
+      toySaving = false;
+      saySending = false;
+      TOY_KEYS.forEach((key) => { $(key).value = ''; });
+      $('toyReplyState').textContent = '本体につなぐと設定を読み込みます。';
+    }
+    renderMode(connected);
+    updateVoiceInputs();
+    updateIrButtons();
+    if (connected) {
+      if (ready) {
+        // Idle snapshots have no notice to render; explicitly replace the
+        // loading card when settings finish, preserving any recent gesture.
+        if (becameReady && !lastMotionAt) {
+          setPassiveResult('準備完了', '設定を読み込みました。本体をやさしく動かしてみてね。', '本体から動きが届くよ。');
+        }
+        if (detectorState) renderDetectorState();
+      } else {
+        setPassiveResult('設定を読み込み中…', '本体の保存内容を確認しています。', '少し待ってね。');
+      }
+    }
+    if (!connected) {
+      finishIrRequest({ disconnected: true });
+      $('irTestState').textContent = '本体につなぐとテスト送信できます。';
+      if (weatherTicker !== null) clearInterval(weatherTicker);
+      weatherTicker = null;
+      weatherSaved = { today: null, tomorrow: null };
+      weatherStateRead = false;
+      weatherStateFailed = false;
+      weatherNoteDate = null;
+      weatherNote = '接続すると2日分を更新します。';
+      weatherNoteError = false;
+      renderWeather();
+      if (timeTicker !== null) clearInterval(timeTicker);
+      timeTicker = null;
+      timeBaseMs = -1;
+      speechMotion = null;
+      speechAssembly = null;
+      $('speechMotion').textContent = '動きとセリフ';
+      $('speechText').textContent = '動いたときのお話をここに表示します。';
+      $('listenResult').textContent = '1回たたくと、3秒間お話を聞くよ。';
+      $('resultTitle').textContent = 'つないでね';
+      $('resultDetail').textContent = '本体とつながると、認識した動きをここに表示します。';
+      $('resultBubble').textContent = '1回たたくと、本体が反応するよ。';
+      $('saveState').textContent = '本体につなぐと保存できます。';
+      $('saveState').className = 'save-state';
+      $('volumeState').textContent = '本体につなぐと音量を読み込みます。';
+      $('timeState').textContent = '本体の時刻：未接続';
+      $('postureValue').textContent = '判定待ち';
+      $('postureAngle').textContent = '角度 --°';
+      $('swapNodTiltInput').disabled = true;
+      $('swapNodTiltState').textContent = '本体につなぐと設定を読み込みます。';
+      $('listenModeInput').disabled = true;
+      $('listenModeState').textContent = '本体につなぐと設定を読み込みます。';
+    }
+  }
+
+  function showBrowserNotice(message) {
+    const notice = $('browserNotice');
+    if (message) notice.textContent = message;
+    notice.classList.add('show');
+  }
+
+  function setError(message) {
+    const state = $('connectionState');
+    state.textContent = message;
+    state.className = 'connection-state error';
+  }
+
+  function setResult(title, detail) {
+    clearTimeout(stateTimer);
+    stateTimer = null;
+    lastMotionAt = Date.now();
+    stateNotice = '';
+    $('resultTitle').textContent = title;
+    $('resultDetail').textContent = detail || '動きを見つけたよ。';
+    $('resultBubble').textContent = '本体から届いた動きだよ。';
+    const card = $('resultCard');
+    card.classList.remove('flash');
+    void card.offsetWidth;
+    card.classList.add('flash');
+  }
+
+  function updateNameCounter() {
+    const value = $('nameInput').value;
+    $('nameCounter').textContent = `${Array.from(value).length} / 10文字`;
+    $('previewText').textContent = `私は${value || 'のんきちゃん'}。遊んでね`;
+  }
+
+  function onNameInput() {
+    updateNameCounter();
+    $('saveState').textContent = '未保存の名前';
+    $('saveState').className = 'save-state';
+  }
+
+  function validateName(raw) {
+    const value = raw.trim();
+    const chars = Array.from(value);
+    const bytes = enc.encode(value);
+    if (!value) return { error: '名前を入力してください。' };
+    if (chars.length > 10) return { error: '名前は10文字以内にしてください。' };
+    if (bytes.byteLength > 30) return { error: '名前はUTF-8で30バイト以内にしてください。' };
+    if (/^[\s\u2000-\u200a\u202f\u205f\u3000]+$/u.test(value)) return { error: '空白だけの名前は使えません。' };
+    if(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/u.test(value)) return { error: '改行や制御文字は使えません。' };
+    return { value };
+  }
+
+  function isCurrentConnection(epoch) {
+    return epoch === connectionEpoch && !!ctrl && !!device?.gatt?.connected;
+  }
+
+  function writeCtrl(bytes, epoch = connectionEpoch) {
+    const characteristic = ctrl;
+    ctrlChain = ctrlChain.then(() => {
+      if (!isCurrentConnection(epoch) || ctrl !== characteristic) throw new Error('本体に接続してください');
+      return characteristic.writeValueWithoutResponse(bytes);
+    });
+    const result = ctrlChain;
+    ctrlChain = ctrlChain.catch(() => {});
+    return result;
+  }
+
+  function waitForResult(operation, timeoutMs = 5000) {
+    let waiter;
+    const promise = new Promise((resolve) => {
+      waiter = {
+        resolve: (value) => { clearTimeout(waiter.timer); resolve(value); },
+        timer: setTimeout(() => {
+          if (waiters.get(operation) === waiter) waiters.delete(operation);
+          resolve({ error: 0x7fffffff, timeout: true });
+        }, timeoutMs),
+      };
+      waiters.set(operation, waiter);
+    });
+    return promise;
+  }
+
+  function cancelWaiters() {
+    for (const waiter of waiters.values()) waiter.resolve({ error: 0x7fffffff, timeout: true });
+    waiters.clear();
+  }
+
+  function cancelResultWaiter(operation) {
+    const waiter = waiters.get(operation);
+    if (waiter) { waiters.delete(operation); waiter.resolve({ error: 0x7fffffff, timeout: true }); }
+  }
+
+  function readWeatherTuple(view, offset) {
+    const year = view.getUint16(offset, true);
+    const month = view.getUint8(offset + 2);
+    const day = view.getUint8(offset + 3);
+    const code = view.getUint8(offset + 4);
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return parseWeatherDate(date) && validWeatherCode(code) ? { date, year, month, day, code } : null;
+  }
+
+  function renderTime() {
+    if (timeBaseMs < 0) return;
+    const localMs = timeBaseMs + Math.max(0, performance.now() - timeBaseTick);
+    const dateTime = new Date(localMs).toISOString().slice(0, 19).replace('T', ' ');
+    $('timeState').textContent = `本体の時刻：${dateTime}（同期済み）`;
+  }
+
+  function receiveSpeech(view) {
+    if (view.byteLength < 9 || view.byteLength > 20 || !speechMotion) return;
+    const eventId = view.getUint8(1), seq = view.getUint32(2, true);
+    const delivery = view.getUint8(6), part = view.getUint8(7), total = view.getUint8(8);
+    const size = view.byteLength - 9;
+    if (eventId !== speechMotion.eventId || seq !== speechMotion.seq ||
+        delivery > 2 || total < 1 || total > 12 || part >= total ||
+        (part < total - 1 && size !== 11) ||
+        (part === total - 1 && (total - 1) * 11 + size > 127) ||
+        (delivery === 0 && (total !== 1 || size !== 0)) ||
+        (delivery !== 0 && size === 0)) return;
+    if (!speechAssembly) speechAssembly = { delivery, total, parts: new Map() };
+    const assembly = speechAssembly;
+    if (assembly.delivery !== delivery || assembly.total !== total) return;
+    assembly.parts.set(part, new Uint8Array(view.buffer, view.byteOffset + 9, size).slice());
+    if (assembly.parts.size !== total) return;
+    const bytes = new Uint8Array(Array.from(assembly.parts.values()).reduce((n, p) => n + p.length, 0));
+    let offset = 0;
+    for (let i = 0; i < total; i++) {
+      bytes.set(assembly.parts.get(i), offset);
+      offset += assembly.parts.get(i).length;
+    }
+    let text;
+    try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+    catch { return; }
+    $('speechText').textContent = delivery === 0 ? '（この動きは声なし）'
+      : delivery === 2 ? '発声できませんでした：' + text : text;
+  }
+
+  function receiveIntent(view) {
+    if (view.byteLength !== 14 || !speechMotion) return;
+    const eventId = view.getUint8(1), seq = view.getUint32(2, true);
+    const intent = view.getUint8(6), reason = view.getUint8(7);
+    const raw1 = view.getUint8(8), raw2 = view.getUint8(9);
+    const score1 = view.getUint16(10, true), score2 = view.getUint16(12, true);
+    if (eventId !== 1 || eventId !== speechMotion.eventId || seq !== speechMotion.seq ||
+        reason > 3 || score1 > 1000 || score2 > 1000 ||
+        ((reason !== 0 || intent < INTENT_LABELS.length) &&
+          ((raw1 > 16 && raw1 !== 255) || (raw2 > 16 && raw2 !== 255))) ||
+        (reason === 0 ? intent === 255 : intent !== 255)) return;
+    if (reason !== 0) {
+      $('listenResult').textContent = '聞き取れなかった（' +
+        ['','無音','自信なし','聞き取りに失敗'][reason] + '）';
+      return;
+    }
+    // The device owns the stt32 decision. A newer firmware may know more ids.
+    const label = INTENT_LABELS[intent] ?? '（未対応）';
+    $('listenResult').textContent = raw1 === intent
+      ? `聞き取り: ${label}（${Math.round(score1 / 10)}%）`
+      : `聞き取り: ${label}`;
+  }
+
+  function onStatus(event) {
+    const view = event.target.value;
+    if (!view || view.byteLength < 1) return;
+    const op = view.getUint8(0);
+    if (op === STATUS_VOICE_CFG_ITEM && view.byteLength >= 5) {
+      const bytes = new Uint8Array(view.buffer, view.byteOffset + 3, view.byteLength - 3);
+      const first = bytes.indexOf(0);
+      const last = bytes.indexOf(0, first + 1);
+      if (first <= 0 || last < 0) return;
+      const key = dec.decode(bytes.subarray(0, first));
+      if (!TOY_KEYS.includes(key)) return;
+      if (!toySaving) $(key).value = dec.decode(bytes.subarray(first + 1, last));
+      toyLoaded.add(key);
+      if (toyLoaded.size === 4 && !toySaving) $('toyReplyState').textContent = '本体の返事を読み込みました。';
+      updateVoiceInputs();
+    } else if (op === STATUS_MOTION && view.byteLength >= 10) {
+      const eventId = view.getUint8(1);
+      speechMotion = { eventId, seq: view.getUint32(2, true) };
+      speechAssembly = null;
+      $('listenResult').textContent = eventId === 1 ? '聞き取りの結果を待っています。' : '';
+      $('speechMotion').textContent = (resultLabels[eventId] || '動きを見つけたよ') + ' のセリフ';
+      $('speechText').textContent = '発話内容はまだ届いていません。';
+      setResult(resultLabels[eventId] || '動きを見つけたよ', resultDetails[eventId] || '本体から動きが届いたよ。');
+    } else if (op === STATUS_MOTION_SPEECH) {
+      receiveSpeech(view);
+    } else if (op === STATUS_INTENT) {
+      receiveIntent(view);
+    } else if (op === STATUS_DETECTOR_STATE && view.byteLength >= 9) {
+      detectorState = {
+        state: view.getUint8(1),
+        sleeping: view.getUint8(2) !== 0,
+        suspended: view.getUint8(3) !== 0,
+        voicePlaying: view.getUint8(4) !== 0,
+        seq: view.getUint32(5, true),
+      };
+      renderDetectorState();
+    } else if (op === STATUS_POSTURE && view.byteLength >= 8) {
+      const posture = view.getUint8(1);
+      const angle = view.getUint16(2, true) / 100;
+      $('postureValue').textContent = posture === 1 ? '起立' : posture === 2 ? '寝姿勢' : posture === 3 ? '中間姿勢' : '基準を確認中';
+      $('postureAngle').textContent = posture === 0 ? '角度 --°' : `角度 ${angle.toFixed(1)}°`;
+    } else if (op === STATUS_SWAP_NOD_TILT && view.byteLength >= 2) {
+      $('swapNodTiltInput').checked = view.getUint8(1) !== 0;
+      $('swapNodTiltState').textContent = '本体に保存済みです。';
+    } else if (op === STATUS_LISTEN_MODE && view.byteLength === 2 && view.getUint8(1) < LISTEN_MODE_TEXT.length) {
+      const mode = listenMode = view.getUint8(1);
+      renderMode(true);
+      updateVoiceInputs();
+      $('listenModeInput').value = String(mode);
+      $('listenModeState').textContent = LISTEN_MODE_TEXT[mode];
+    } else if (op === STATUS_VOICE_VOL && view.byteLength >= 2) {
+      const value = view.getUint8(1);
+      $('volumeInput').value = String(value);
+      $('volumeValue').textContent = String(value);
+      $('volumeState').textContent = '本体の音量を読み込みました。';
+    } else if (op === STATUS_IR_RESULT && view.byteLength === 10) {
+      if (irPending && view.getUint8(1) === irPending.direction &&
+          view.getUint32(2, true) === irPending.id) {
+        finishIrRequest({ error: view.getUint32(6, true) });
+      }
+    } else if (op === STATUS_NAME && view.byteLength >= 3) {
+      const part = view.getUint8(1);
+      const total = view.getUint8(2);
+      if (part === 0 || total !== namePartTotal) {
+        nameParts = [];
+        namePartTotal = total;
+      }
+      if (total > 0 && part < total) nameParts[part] = new Uint8Array(view.buffer, view.byteOffset + 3, view.byteLength - 3);
+      const complete = total > 0 && nameParts.length === total
+        && Array.from({ length: total }, (_, index) => nameParts[index] instanceof Uint8Array).every(Boolean);
+      if (complete) {
+        const bytes = new Uint8Array(nameParts.reduce((n, item) => n + item.byteLength, 0));
+        let offset = 0;
+        nameParts.forEach((item) => { bytes.set(item, offset); offset += item.byteLength; });
+        deviceName = dec.decode(bytes);
+        nameParts = [];
+        namePartTotal = 0;
+        $('nameInput').value = deviceName;
+        updateNameCounter();
+      }
+    } else if (op === STATUS_NAME_RESULT && view.byteLength >= 6) {
+      const operation = view.getUint8(1);
+      const error = view.getUint32(2, true);
+      const waiter = waiters.get(operation);
+      if (waiter) { waiters.delete(operation); waiter.resolve({ error }); }
+      if (operation === NAME_OP_CONFIG_SAVE) {
+        $('volumeState').textContent = error === 0 ? '音量を本体に保存しました。' : '音量の保存に失敗しました。';
+      }
+    } else if (op === STATUS_TIME_RESULT && view.byteLength === 13) {
+      const error = view.getUint32(1, true);
+      const localMs = Number(view.getBigInt64(5, true));
+      if (error === 0 && localMs >= 0) {
+        if (timeTicker !== null) clearInterval(timeTicker);
+        timeBaseMs = localMs;
+        timeBaseTick = performance.now();
+        renderTime();
+        timeTicker = setInterval(renderTime, 1000);
+      }
+      const waiter = waiters.get(TIME_OP_SYNC);
+      if (waiter) { waiters.delete(TIME_OP_SYNC); waiter.resolve({ error }); }
+    } else if (op === STATUS_WEATHER_RESULT && view.byteLength === 15) {
+      const error = view.getUint32(1, true);
+      const today = error === 0 ? readWeatherTuple(view, 5) : null;
+      const tomorrow = error === 0 ? readWeatherTuple(view, 10) : null;
+      if (error === 0 && (!today || !tomorrow)) return;
+      const waiter = waiters.get(WEATHER_OP_SET);
+      if (waiter) { waiters.delete(WEATHER_OP_SET); waiter.resolve({ error, today, tomorrow }); }
+    } else if (op === STATUS_WEATHER_STATE && view.byteLength === 13) {
+      const todayFlag = view.getUint8(1), tomorrowFlag = view.getUint8(7);
+      if (todayFlag > 1 || tomorrowFlag > 1) return;
+      const today = todayFlag ? readWeatherTuple(view, 2) : null;
+      const tomorrow = tomorrowFlag ? readWeatherTuple(view, 8) : null;
+      if ((todayFlag && !today) || (tomorrowFlag && !tomorrow)) return;
+      const waiter = waiters.get(WEATHER_OP_GET);
+      if (waiter) { waiters.delete(WEATHER_OP_GET); waiter.resolve({ error: 0, today, tomorrow }); }
+    }
+  }
+
+  function updateIrButtons() {
+    IR_BUTTONS.forEach(id => { $(id).disabled = !pageReady || !!irPending; });
+    IR_HOLD_FIELDS.forEach(id => { $(id).disabled = !pageReady || !!irPending; });
+  }
+
+  function finishIrRequest(result) {
+    if (!irPending) return;
+    const pending = irPending;
+    irPending = null;
+    clearTimeout(pending.timer);
+    pending.resolve(result);
+    updateIrButtons();
+  }
+
+  async function sendIrRequest(direction, payload, description, timeoutMs) {
+    if (!pageReady || !ctrl || irPending) return;
+    const epoch = connectionEpoch;
+    const id = irRequestId = (irRequestId + 1) >>> 0;
+    const view = new DataView(payload.buffer);
+    view.setUint32(payload.length - 4, id, true);
+    const resultPromise = new Promise(resolve => {
+      irPending = { id, direction, resolve, timer: null };
+      irPending.timer = setTimeout(() => {
+        if (irPending?.id === id) finishIrRequest({ timeout: true });
+      }, timeoutMs);
+    });
+    updateIrButtons();
+    $('irTestState').textContent = `${description}を送信中…`;
+    try {
+      await writeCtrl(payload, epoch);
+      const result = await resultPromise;
+      if (epoch !== connectionEpoch || id !== irRequestId || result.disconnected) return;
+      $('irTestState').textContent = result.timeout
+        ? `${description}の送信結果を確認できませんでした。機器の動きを確認してください。`
+        : result.error === 0
+          ? `${description}を送信しました。機器の動きを確認してください。`
+          : result.error === 0x103
+            ? `${description}: 本体が送信中、またはIRを利用できません。`
+            : result.error === 0x102
+              ? `${description}: 方向・方式・回数・間隔が範囲外のため本体に拒否されました (0x102)。`
+              : `${description}のIR送信に失敗しました (${result.error})。`;
+    } catch (error) {
+      if (epoch !== connectionEpoch || id !== irRequestId || irPending?.id !== id) return;
+      finishIrRequest({ error: true });
+      $('irTestState').textContent = `${description}の送信結果を確認できませんでした: ${error.message}`;
+    }
+  }
+
+  async function testIr(direction) {
+    if (!Number.isInteger(direction) || direction < 0 || direction > 3) return;
+    const payload = new Uint8Array([CTRL_IR_TEST, direction, 0, 0, 0, 0]);
+    return sendIrRequest(direction, payload, `${IR_LABELS[direction]}の信号（${IR_DEFAULT_REPEATS[direction]}回）`, 4000);
+  }
+
+  function irHoldInteger(id, min, max) {
+    const raw = String($(id).value).trim();
+    if (!/^\d+$/.test(raw)) return null;
+    const number = Number(raw);
+    return Number.isSafeInteger(number) && number >= min && number <= max ? number : null;
+  }
+
+  async function testIrHold() {
+    if (!pageReady || !ctrl || irPending) return;
+    const direction = irHoldInteger('irHoldDirection', 0, 3);
+    const mode = irHoldInteger('irHoldMode', 0, 1);
+    const count = irHoldInteger('irHoldCount', 1, 30);
+    const intervalMs = irHoldInteger('irHoldInterval', 108, 500);
+    if (direction === null || mode === null || count === null || intervalMs === null) {
+      $('irTestState').textContent = '長押しテストの方向・方式・回数（1〜30）・間隔（108〜500ms）を確認してください。';
+      return;
+    }
+    const payload = new Uint8Array(10);
+    const view = new DataView(payload.buffer);
+    view.setUint8(0, CTRL_IR_HOLD);
+    view.setUint8(1, direction);
+    view.setUint8(2, mode);
+    view.setUint8(3, count);
+    view.setUint16(4, intervalMs, true);
+    const description = `${IR_LABELS[direction]}の長押し（${mode === 0 ? 'NECリピート' : '本フレーム反復'}・${count}回・${intervalMs}ms間隔）`;
+    return sendIrRequest(direction, payload, description, count * intervalMs + 4000);
+  }
+
+  async function syncTime(epoch = connectionEpoch) {
+    const now = Date.now();
+    const offsetMinutes = -new Date(now).getTimezoneOffset();
+    const payload = new Uint8Array(11);
+    const view = new DataView(payload.buffer);
+    view.setUint8(0, CTRL_TIME_SYNC);
+    view.setBigInt64(1, BigInt(now), true);
+    view.setInt16(9, offsetMinutes, true);
+    const waiter = waitForResult(TIME_OP_SYNC);
+    try { await writeCtrl(payload, epoch); }
+    catch (error) { cancelResultWaiter(TIME_OP_SYNC); throw error; }
+    return waiter;
+  }
+
+  async function fetchWeatherForecast() {
+    const controller = new AbortController();
+    weatherAbort = controller;
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 8000);
+    try {
+      const response = await fetch(WEATHER_API_URL, { signal: controller.signal, cache: 'no-store' });
+      if (!response.ok) throw new Error(`取得先の応答 ${response.status}`);
+      const data = await response.json();
+      const daily = data?.daily;
+      if (data?.timezone !== 'Asia/Tokyo' || !Array.isArray(daily?.time) ||
+          !Array.isArray(daily?.weather_code) || daily.time.length < 2 ||
+          daily.weather_code.length < 2) throw new Error('予報データが不足しています');
+      const dates = tokyoDates();
+      const forecast = {};
+      for (const [index, key] of ['today', 'tomorrow'].entries()) {
+        const date = daily.time[index];
+        const code = daily.weather_code[index];
+        const parsed = parseWeatherDate(date);
+        if (!parsed || date !== dates[key] || !validWeatherCode(code))
+          throw new Error('予報の日付または天気コードを確認できません');
+        forecast[key] = { ...parsed, code };
+      }
+      return forecast;
+    } catch (error) {
+      if (timedOut) throw new Error('天気の取得がタイムアウトしました');
+      throw error;
+    } finally {
+      clearTimeout(timer);
+      if (weatherAbort === controller) weatherAbort = null;
+    }
+  }
+
+  async function readWeatherState(epoch) {
+    const waiter = waitForResult(WEATHER_OP_GET, 4000);
+    try { await writeCtrl(new Uint8Array([CTRL_WEATHER_GET]), epoch); }
+    catch (error) { cancelResultWaiter(WEATHER_OP_GET); throw error; }
+    const state = await waiter;
+    if (state.timeout) throw new Error('本体から天気の応答がありません');
+    return state;
+  }
+
+  async function sendWeatherForecast(forecast, epoch) {
+    const payload = new Uint8Array(11);
+    payload[0] = CTRL_WEATHER_SET;
+    for (const [index, key] of ['today', 'tomorrow'].entries()) {
+      const item = forecast[key];
+      const offset = 1 + index * 5;
+      payload[offset] = item.year & 0xff;
+      payload[offset + 1] = item.year >> 8;
+      payload[offset + 2] = item.month;
+      payload[offset + 3] = item.day;
+      payload[offset + 4] = item.code;
+    }
+    const waiter = waitForResult(WEATHER_OP_SET, 5000);
+    try { await writeCtrl(payload, epoch); }
+    catch (error) { cancelResultWaiter(WEATHER_OP_SET); throw error; }
+    const result = await waiter;
+    if (result.timeout) throw new Error('本体から保存結果がありません');
+    if (result.error !== 0) {
+      const rejected = new Error(`本体が予報を受け付けませんでした (${result.error})`);
+      rejected.confirmedRejection = true;
+      throw rejected;
+    }
+    if (!sameForecast(result, forecast))
+      throw new Error('本体の保存結果が送信内容と一致しません');
+  }
+
+  async function updateWeather(epoch, timePromise) {
+    // Start HTTP while time synchronization is in flight. BLE writes still
+    // wait for the clock result, and all writes use the connection's epoch.
+    const fetched = fetchWeatherForecast().then(
+      (forecast) => ({ forecast }), (error) => ({ error }));
+    await timePromise;
+    if (!isCurrentConnection(epoch)) return;
+    try {
+      const state = await readWeatherState(epoch);
+      if (!isCurrentConnection(epoch)) return;
+      weatherSaved = { today: state.today, tomorrow: state.tomorrow };
+      weatherStateRead = true;
+      weatherStateFailed = false;
+      setWeatherNote('本体の保存状態を確認しました。新しい予報を取得中…');
+    } catch (error) {
+      if (!isCurrentConnection(epoch)) return;
+      weatherStateRead = false;
+      weatherStateFailed = true;
+      setWeatherNote('本体の保存状態を確認できませんでした。新しい予報を取得中…', true);
+    }
+    const outcome = await fetched;
+    if (!isCurrentConnection(epoch)) return;
+    if (outcome.error) {
+      setWeatherNote(`天気を更新できませんでした。保存済みの値は変更していません。${outcome.error.message || ''}`, true);
+      return;
+    }
+    const dates = tokyoDates();
+    if (outcome.forecast.today.date !== dates.today || outcome.forecast.tomorrow.date !== dates.tomorrow) {
+      setWeatherNote('取得中に東京の日付が変わりました。接続し直すと更新できます。', true);
+      return;
+    }
+    try {
+      await sendWeatherForecast(outcome.forecast, epoch);
+      if (!isCurrentConnection(epoch)) return;
+      weatherSaved = outcome.forecast;
+      weatherStateRead = true;
+      weatherStateFailed = false;
+      setWeatherNote('今日と明日の予報を本体に保存しました。');
+    } catch (error) {
+      if (!isCurrentConnection(epoch)) return;
+      if (error.confirmedRejection) {
+        setWeatherNote(`本体が予報を拒否しました。保存済みの値は変更していません。${error.message}`, true);
+        return;
+      }
+      // A missing RESULT does not prove that SET failed: the write can have
+      // reached the device. Query the stored state before making a claim.
+      try {
+        const state = await readWeatherState(epoch);
+        if (!isCurrentConnection(epoch)) return;
+        weatherSaved = { today: state.today, tomorrow: state.tomorrow };
+        weatherStateRead = true;
+        weatherStateFailed = false;
+        setWeatherNote(sameForecast(state, outcome.forecast)
+          ? '結果通知は届きませんでしたが、本体の保存状態を読み直して2日分を確認しました。'
+          : '保存結果を確認できませんでした。本体の現在の天気を読み直しました。',
+        !sameForecast(state, outcome.forecast));
+      } catch (_) {
+        if (!isCurrentConnection(epoch)) return;
+        weatherSaved = { today: null, tomorrow: null };
+        weatherStateRead = false;
+        weatherStateFailed = true;
+        setWeatherNote('保存結果を確認できませんでした。再接続して本体の天気を確認してください。', true);
+      }
+    }
+  }
+
+  async function connect() {
+    if (!navigator.bluetooth) { showBrowserNotice(); return; }
+    const epoch = ++connectionEpoch;
+    weatherAbort?.abort();
+    weatherSaved = { today: null, tomorrow: null };
+    weatherStateRead = false;
+    weatherStateFailed = false;
+    setWeatherNote('東京の今日と明日の予報を確認中…');
+    $('connectButton').disabled = true;
+    detectorState = null;
+    stateNotice = '';
+    lastMotionAt = 0;
+    clearTimeout(stateTimer);
+    stateTimer = null;
+    try {
+      const selectedDevice = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID] }] });
+      if (epoch !== connectionEpoch) return;
+      device = selectedDevice;
+      selectedDevice.addEventListener('gattserverdisconnected', () => {
+        if (device === selectedDevice && epoch === connectionEpoch) disconnected();
+      });
+      server = await selectedDevice.gatt.connect();
+      if (epoch !== connectionEpoch) { if (selectedDevice.gatt.connected) selectedDevice.gatt.disconnect(); return; }
+      const service = await server.getPrimaryService(SERVICE_UUID);
+      if (epoch !== connectionEpoch) return;
+      ctrl = await service.getCharacteristic(CTRL_UUID);
+      if (epoch !== connectionEpoch) return;
+      status = await service.getCharacteristic(STATUS_UUID);
+      if (epoch !== connectionEpoch) return;
+      try { info = JSON.parse(new TextDecoder().decode(await (await service.getCharacteristic(INFO_UUID)).readValue())); } catch (_) { info = null; }
+      if (epoch !== connectionEpoch) return;
+      const activeStatus = status;
+      status.addEventListener('characteristicvaluechanged', (event) => {
+        if (epoch === connectionEpoch && status === activeStatus) onStatus(event);
+      });
+      await status.startNotifications();
+      if (!isCurrentConnection(epoch)) return;
+      setConnection(true, '時刻を合わせています…', false);
+      $('timeState').textContent = '本体の時刻：同期中…';
+      weatherTicker = setInterval(renderWeather, 1000);
+      const timePromise = syncTime(epoch).catch((error) => ({ error: error?.message || '送信失敗' }));
+      void updateWeather(epoch, timePromise);
+      const timeResult = await timePromise;
+      if (!isCurrentConnection(epoch)) return;
+      const timeOk = !timeResult.timeout && timeResult.error === 0;
+      if (!timeOk) $('timeState').textContent =
+        `本体の時刻：同期失敗（${timeResult.timeout ? '応答なし' : timeResult.error}）`;
+      setConnection(true, '設定を読み込み中…', false);
+      const waiter = waitForResult(NAME_OP_LOAD);
+      await writeCtrl(new Uint8Array([CTRL_NAME_LOAD]), epoch);
+      const result = await waiter;
+      if (!isCurrentConnection(epoch)) return;
+      if (result.timeout) throw new Error('本体から設定を読み込めませんでした');
+      if (result.error !== 0) throw new Error(`設定の読み込みに失敗しました (${result.error})`);
+      await writeCtrl(new Uint8Array([CTRL_VOICE_CFG_LOAD]), epoch);
+      if (!isCurrentConnection(epoch)) return;
+      savedName = deviceName || 'のんきちゃん';
+      setConnection(true, timeOk ? '接続済み・準備完了' : '接続済み・時刻同期失敗', true);
+      $('saveState').textContent = `保存済み: ${savedName}`;
+      $('saveState').className = 'save-state ok';
+    } catch (error) {
+      if (epoch !== connectionEpoch) return;
+      const message = error?.message || '接続できませんでした';
+      pendingDisconnectMessage = message;
+      if (device?.gatt?.connected) device.gatt.disconnect();
+      else {
+        ctrl = null; status = null;
+        setConnection(false);
+        setError(message);
+        pendingDisconnectMessage = '';
+      }
+    }
+  }
+
+  function disconnected() {
+    ++connectionEpoch;
+    weatherAbort?.abort();
+    weatherAbort = null;
+    const failure = pendingDisconnectMessage;
+    pendingDisconnectMessage = '';
+    cancelWaiters();
+    clearTimeout(volumeTimer);
+    volumeTimer = null;
+    clearTimeout(stateTimer);
+    stateTimer = null;
+    nameParts = [];
+    namePartTotal = 0;
+    deviceName = '';
+    detectorState = null;
+    pageReady = false;
+    stateNotice = '';
+    lastMotionAt = 0;
+    ctrl = null; status = null; server = null; device = null;
+    ctrlChain = Promise.resolve();
+    setConnection(false, '切断しました');
+    if (failure) setError(failure);
+  }
+
+  async function disconnect() {
+    const oldDevice = device;
+    disconnected();
+    if (oldDevice?.gatt?.connected) oldDevice.gatt.disconnect();
+  }
+
+  async function saveName() {
+    const checked = validateName($('nameInput').value);
+    if (checked.error) {
+      $('saveState').textContent = checked.error;
+      $('saveState').className = 'save-state error';
+      return;
+    }
+    const nameBytes = enc.encode(checked.value);
+    const payload = new Uint8Array(1 + nameBytes.length + 1);
+    payload[0] = CTRL_NAME_SAVE;
+    payload.set(nameBytes, 1);
+    $('saveNameButton').disabled = true;
+    $('nameInput').disabled = true;
+    $('listenButton').disabled = true;
+    $('saveState').textContent = '本体に保存中…';
+    $('saveState').className = 'save-state';
+    try {
+      const waiter = waitForResult(NAME_OP_SAVE);
+      await writeCtrl(payload);
+      const result = await waiter;
+      if (result.timeout || result.error !== 0) throw new Error(result.timeout ? '本体から応答がありません。' : `保存に失敗しました (${result.error})`);
+      savedName = checked.value;
+      $('nameInput').value = savedName;
+      updateNameCounter();
+      $('saveState').textContent = `保存しました: ${savedName}`;
+      $('saveState').className = 'save-state ok';
+    } catch (error) {
+      $('saveState').textContent = error.message || '保存に失敗しました。もう一度試してください。';
+      $('saveState').className = 'save-state error';
+    } finally {
+      $('nameInput').disabled = false;
+      $('listenButton').disabled = !ctrl;
+      $('saveNameButton').disabled = !ctrl;
+    }
+  }
+
+  function renderMode(connected = !!ctrl) {
+    $('currentMode').textContent = !connected ? 'モード：未接続'
+      : listenMode === null ? 'モード：確認中' : `モード：${listenMode === 1 ? 'おもちゃ' : 'ぬいぐるみ'}`;
+    const toy = connected && listenMode === 1;
+    $('irTestSection').hidden = !toy;
+    $('toyReplySection').hidden = !toy;
+  }
+
+  // CTRL accepts 128 bytes; SAY needs one opcode and a terminating NUL.
+  // Saved replies have a separate 64-byte buffer including their NUL.
+  function textValid(text, limit, allowEmpty = false) {
+    return !text.includes('\0') && enc.encode(text).length <= limit && (allowEmpty || text.trim().length > 0);
+  }
+
+  function updateVoiceInputs() {
+    const say = $('sayInput').value;
+    $('sayCount').textContent = `残り${126 - enc.encode(say).length}バイト${say.includes('\0') ? '（使用できない文字があります）' : ''}`;
+    $('sayButton').disabled = !pageReady || saySending || !textValid(say, 126);
+    let valid = true;
+    TOY_KEYS.forEach((key) => {
+      const text = $(key).value;
+      const remaining = 63 - enc.encode(text).length;
+      $(key + 'Count').textContent = `残り${remaining}バイト${text.includes('\0') ? '（使用できない文字があります）' : ''}`;
+      $(key).disabled = !pageReady || toySaving || !toyLoaded.has(key);
+      $(key + 'Reset').disabled = $(key).disabled;
+      valid = valid && textValid(text, 63, true);
+    });
+    $('volumeInput').disabled = !pageReady || toySaving;
+    $('saveToyReplies').disabled = !pageReady || listenMode !== 1 || toySaving || toyLoaded.size !== 4 || !valid;
+  }
+
+  async function sayText() {
+    const text = $('sayInput').value;
+    if (!pageReady || saySending || !textValid(text, 126)) return;
+    const epoch = connectionEpoch;
+    const bytes = enc.encode(text);
+    const payload = new Uint8Array(bytes.length + 2);
+    payload[0] = CTRL_VOICE_SAY;
+    payload.set(bytes, 1);
+    saySending = true;
+    updateVoiceInputs();
+    try {
+      await writeCtrl(payload, epoch);
+      if (isCurrentConnection(epoch)) $('sayState').textContent = '話す文を送りました。';
+    } catch (error) {
+      if (isCurrentConnection(epoch)) $('sayState').textContent = `送信できませんでした: ${error.message}`;
+    } finally {
+      if (isCurrentConnection(epoch)) { saySending = false; updateVoiceInputs(); }
+    }
+  }
+
+  // SAVE responses share one operation id with volume saves; await each response
+  // before starting another SAVE so an acknowledgement belongs to one caller.
+  function saveVoiceConfig(epoch) {
+    const result = configSaveChain.then(async () => {
+      if (!isCurrentConnection(epoch)) throw new Error('本体に接続してください');
+      const waiter = waitForResult(NAME_OP_CONFIG_SAVE);
+      try { await writeCtrl(new Uint8Array([CTRL_VOICE_CFG_SAVE]), epoch); }
+      catch (error) { cancelResultWaiter(NAME_OP_CONFIG_SAVE); throw error; }
+      return waiter;
+    });
+    configSaveChain = result.catch(() => {});
+    return result;
+  }
+
+  async function saveToyReplies() {
+    updateVoiceInputs();
+    if ($('saveToyReplies').disabled) return;
+    const epoch = connectionEpoch;
+    const values = TOY_KEYS.map((key) => $(key).value);
+    toySaving = true;
+    updateVoiceInputs();
+    $('toyReplyState').textContent = '保存中…';
+    try {
+      for (let i = 0; i < TOY_KEYS.length; ++i) {
+        const key = enc.encode(TOY_KEYS[i]);
+        const text = enc.encode(values[i]);
+        const payload = new Uint8Array(key.length + text.length + 3);
+        payload[0] = CTRL_VOICE_CFG_SET;
+        payload.set(key, 1);
+        payload.set(text, key.length + 2);
+        await writeCtrl(payload, epoch);
+      }
+      const result = await saveVoiceConfig(epoch);
+      if (!isCurrentConnection(epoch)) return;
+      if (result.timeout || result.error !== 0) throw new Error(result.timeout ? '本体から保存結果がありません' : `保存エラー (${result.error})`);
+      $('toyReplyState').textContent = '返事を本体に保存しました。';
+    } catch (error) {
+      if (isCurrentConnection(epoch)) $('toyReplyState').textContent = `保存を確認できませんでした: ${error.message}。再接続して読み直してください。`;
+    } finally {
+      if (isCurrentConnection(epoch)) { toySaving = false; updateVoiceInputs(); }
+    }
+  }
+
+  async function listen() {
+    const checked = validateName($('nameInput').value);
+    if (checked.error) { $('saveState').textContent = checked.error; $('saveState').className = 'save-state error'; return; }
+    const text = `私は${checked.value}。遊んでね`;
+    const bytes = enc.encode(text);
+    const payload = new Uint8Array(1 + bytes.length + 1);
+    payload[0] = CTRL_VOICE_SAY;
+    payload.set(bytes, 1);
+    try { await writeCtrl(payload); } catch (error) { setError(error.message || '試聴できませんでした'); }
+  }
+
+  async function setVolume(value) {
+    if (toySaving) return;
+    const epoch = connectionEpoch;
+    $('volumeValue').textContent = value;
+    $('volumeState').textContent = '音量を変更中…';
+    clearTimeout(volumeTimer);
+    volumeTimer = setTimeout(async () => {
+      try {
+        await writeCtrl(new Uint8Array([CTRL_VOICE_SET_VOL, Number(value)]), epoch);
+        const result = await saveVoiceConfig(epoch);
+        if (!isCurrentConnection(epoch)) return;
+        $('volumeState').textContent = result.error === 0 ? '音量を本体に保存しました。' : '音量は反映しましたが保存に失敗しました。';
+      } catch (error) { if (isCurrentConnection(epoch)) $('volumeState').textContent = error.message || '音量を変更できませんでした。'; }
+    }, 180);
+  }
+
+  async function setSwapNodTilt(enabled) {
+    const input = $('swapNodTiltInput');
+    input.disabled = true;
+    $('swapNodTiltState').textContent = '保存中…';
+    try {
+      await writeCtrl(new Uint8Array([CTRL_SWAP_NOD_TILT, enabled ? 1 : 0]));
+    } catch (error) {
+      input.checked = !enabled;
+      $('swapNodTiltState').textContent = `保存できませんでした: ${error.message}`;
+    } finally {
+      input.disabled = !ctrl;
+    }
+  }
+
+  async function setListenMode(mode) {
+    const input = $('listenModeInput');
+    input.disabled = true;
+    $('listenModeState').textContent = '保存中…';
+    try {
+      await writeCtrl(new Uint8Array([CTRL_LISTEN_MODE, mode]));
+    } catch (error) {
+      input.value = String(listenMode);
+      $('listenModeState').textContent = `保存できませんでした: ${error.message}`;
+    } finally {
+      input.disabled = !ctrl;
+    }
+  }
+
+  $('connectButton').addEventListener('click', connect);
+  $('disconnectButton').addEventListener('click', disconnect);
+  $('saveNameButton').addEventListener('click', saveName);
+  $('listenButton').addEventListener('click', listen);
+  IR_BUTTONS.forEach((id, direction) => $(id).addEventListener('click', () => testIr(direction)));
+  $('irHoldButton').addEventListener('click', testIrHold);
+  $('irHoldDirection').addEventListener('change', () => {
+    $('irHoldCount').value = String(IR_DEFAULT_REPEATS[Number($('irHoldDirection').value)]);
+  });
+  $('nameInput').addEventListener('input', onNameInput);
+  $('volumeInput').addEventListener('input', (event) => setVolume(event.target.value));
+  $('swapNodTiltInput').addEventListener('change', (event) => setSwapNodTilt(event.target.checked));
+  $('listenModeInput').addEventListener('change', (event) => setListenMode(Number(event.target.value)));
+  $('sayInput').addEventListener('input', updateVoiceInputs);
+  $('sayButton').addEventListener('click', sayText);
+  $('saveToyReplies').addEventListener('click', saveToyReplies);
+  TOY_KEYS.forEach((key, index) => {
+    $(key).addEventListener('input', updateVoiceInputs);
+    $(key + 'Reset').addEventListener('click', () => { $(key).value = TOY_DEFAULTS[index]; updateVoiceInputs(); });
+  });
+  updateVoiceInputs();
+  renderMode(false);
+  updateNameCounter();
+  if (!navigator.bluetooth) showBrowserNotice();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+#pragma once
+#define STS_WORD23_MIN_SCORE 0.95000000f
+#define STS_WORD23_MIN_MARGIN 0.00000000f

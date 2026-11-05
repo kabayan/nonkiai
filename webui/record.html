@@ -1,0 +1,1392 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>nonkiact2 IMU 収録</title>
+<style>
+  :root { color-scheme: light dark; --fg:#1a1a1a; --bg:#fafaf8; --line:#d8d6d0;
+          --accent:#2d6cdf; --ok:#1f7a3d; --ng:#b03030; --muted:#6b6a66; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fg:#e8e6e1; --bg:#16171a; --line:#33353a; --accent:#7aa5f0;
+            --ok:#63c98a; --ng:#e07a7a; --muted:#9a9894; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; font:14px/1.6 system-ui, sans-serif; color:var(--fg); background:var(--bg); }
+  h1 { font-size:18px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:20px 0 8px; padding-bottom:4px; border-bottom:1px solid var(--line); }
+  .sub { color:var(--muted); margin:0 0 16px; font-size:13px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:8px; }
+  button { font:inherit; padding:6px 14px; border:1px solid var(--line); border-radius:6px;
+           background:var(--bg); color:var(--fg); cursor:pointer; }
+  button:hover:not(:disabled) { border-color:var(--accent); }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  input, select { font:inherit; padding:5px 8px; border:1px solid var(--line); border-radius:6px;
+                  background:var(--bg); color:var(--fg); }
+  input[type=number] { width:80px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th, td { text-align:left; padding:4px 8px; border-bottom:1px solid var(--line); }
+  th { color:var(--muted); font-weight:600; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px,1fr)); gap:8px; }
+  .stat { border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+  .stat .k { font-size:11px; color:var(--muted); }
+  .stat .v { font-size:18px; font-variant-numeric:tabular-nums; }
+  canvas { width:100%; height:150px; border:1px solid var(--line); border-radius:8px; display:block; }
+  #log { height:150px; overflow-y:auto; border:1px solid var(--line); border-radius:8px;
+         padding:8px; font:12px/1.5 ui-monospace, monospace; white-space:pre-wrap; }
+  .ok { color:var(--ok); } .ng { color:var(--ng); }
+  #cue { font-size:28px; font-weight:700; text-align:center; padding:20px; white-space:pre-line;
+         border:2px dashed var(--line); border-radius:12px; margin:8px 0; min-height:88px;
+         display:flex; align-items:center; justify-content:center; }
+  #cue.active { border-color:var(--ok); color:var(--ok); }
+  #cue.prep { border-color:var(--accent); color:var(--accent); }
+  .note { color:var(--muted); font-size:12px; }
+  .scroll { overflow-x:auto; }
+  /* Tabs */
+  .tabs { display:flex; gap:4px; border-bottom:2px solid var(--line); margin:16px 0 12px; }
+  .tab-btn { border:none; border-bottom:2px solid transparent; border-radius:0; margin-bottom:-2px;
+             padding:8px 16px; font-weight:600; background:transparent; cursor:pointer; color:var(--muted); }
+  .tab-btn:hover { color:var(--fg); }
+  .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+  /* Gesture live display */
+  .motion-banner { border:2px solid var(--line); border-radius:12px; padding:24px; text-align:center;
+                   background:var(--bg); margin-bottom:16px; transition:all .2s ease; }
+  .motion-banner.highlight { border-color:var(--ok); background:rgba(31,122,61,0.08); }
+  .motion-current { font-size:36px; font-weight:800; margin:8px 0; letter-spacing:1px; }
+  .motion-meta { color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; }
+  .motion-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px; margin-bottom:16px; }
+  .motion-card { border:1px solid var(--line); border-radius:8px; padding:10px; text-align:center; transition:all .2s ease; }
+  .motion-card.active { border-color:var(--ok); background:rgba(31,122,61,0.15); transform:scale(1.03); }
+  .motion-card .m-title { font-size:12px; color:var(--muted); }
+  .motion-card .m-val { font-size:20px; font-weight:700; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<h1>nonkiact2 IMU 収録 <span id="appVer" style="font-size:12px; font-weight:normal; color:var(--muted); margin-left:8px; padding:2px 6px; border:1px solid var(--line); border-radius:4px;">v1.4.0 (DLS-018: アクション発声設定)</span></h1>
+<p class="sub">
+  AtomS3R の生 IMU 値を記録する。判定はここでは行わない — 収録データから後で設計する。
+  Web Bluetooth は Chromium 系 + セキュアコンテキスト（<code>http://localhost</code> か HTTPS）が要る。
+</p>
+
+<h2>1. 接続</h2>
+<div class="row">
+  <button id="btnConnect" class="primary">接続</button>
+  <button id="btnDisconnect" disabled>切断</button>
+  <span id="connState" class="ng">未接続</span>
+</div>
+<div class="row">
+  <label>ODR
+    <select id="selOdr">
+      <option value="100">100 Hz</option>
+      <option value="200">200 Hz</option>
+      <option value="400" selected>400 Hz</option>
+      <option value="800">800 Hz</option>
+    </select>
+  </label>
+  <button id="btnApplyOdr" disabled>適用</button>
+  <span id="infoView" class="note"></span>
+</div>
+
+<!-- Tab selector -->
+<div class="tabs">
+  <button id="tabBtnMotion" class="tab-btn active" onclick="switchTab('motion')">リアルタイムジェスチャ判定</button>
+  <button id="tabBtnVoice" class="tab-btn" onclick="switchTab('voice')">アクション発声設定</button>
+  <button id="tabBtnVoiceTest" class="tab-btn" onclick="switchTab('voicetest')">実機音声・量子化テスト</button>
+  <button id="tabBtnRecord" class="tab-btn" onclick="switchTab('record')">センサー情報収集（生データ収録）</button>
+</div>
+
+<!-- Tab 1: Motion Detector Realtime -->
+<div id="tabPanelMotion" class="tab-panel active">
+  <div id="motionBanner" class="motion-banner">
+    <div style="font-size:13px; color:var(--muted);">直近に検出されたジェスチャ</div>
+    <div id="motionCurName" class="motion-current">待機中</div>
+    <div id="motionMeta" class="motion-meta">seq: - / time: -</div>
+  </div>
+
+  <h2>動作検出カウント</h2>
+  <div class="motion-grid" id="motionGrid">
+    <!-- Populated by JS -->
+  </div>
+
+  <h2>検出履歴ログ</h2>
+  <div class="scroll">
+    <table id="tblMotionHistory">
+      <thead><tr><th>時刻</th><th>ジェスチャ</th><th>名称</th><th>seq</th><th>デバイス時刻(µs)</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Tab 3: Voice Synthesis & Action Speech Config (DLS-018) -->
+<div id="tabPanelVoice" class="tab-panel">
+  <h2>アクション別 発声テキスト設定</h2>
+  <p class="sub">
+    モーションアクションを識別した際に本体スピーカーから自律発声する日本語テキストを設定します。<br>
+    ひらがな・カタカナ・アルファベット・数字（WAV連結）に対応。設定はデバイスの不揮発性メモリ(NVS)に保存されます。
+  </p>
+
+  <div class="row" style="margin-bottom:12px; align-items:center; gap:16px;">
+    <button id="btnVoiceLoad" class="primary" onclick="loadVoiceConfigsFromDevice()">デバイスから読込 (LOAD)</button>
+    <button id="btnVoiceSave" class="primary" onclick="saveVoiceConfigsToDevice()">デバイスへ保存 (SAVE)</button>
+    <button id="btnVoiceReset" onclick="resetVoiceConfigsToDefaults()">デフォルトに戻す</button>
+    <span id="voiceStatus" class="note">未取得</span>
+  </div>
+
+  <div class="row" style="margin-bottom:16px; align-items:center; background:#f4f4f6; padding:10px 14px; border-radius:6px;">
+    <label style="font-weight:bold; display:flex; align-items:center; gap:8px;">
+      TTS / 音声再生 音量:
+      <input type="range" id="rngVoiceVol" min="0" max="255" value="96" style="width:180px;" oninput="onVoiceVolumeInput(this.value)" onchange="applyVoiceVolume(this.value)">
+      <span id="valVoiceVol" style="min-width:32px; font-family:monospace; font-weight:normal;">96</span>
+    </label>
+    <span class="note" style="margin-left:8px;">(0=無音 〜 96=標準 〜 255=最大 / スライダー変更で即時反映・SAVEでNVS保存)</span>
+  </div>
+
+  <div class="scroll">
+    <table id="tblVoiceConfigs">
+      <thead>
+        <tr>
+          <th style="width:120px;">キー</th>
+          <th style="width:200px;">アクション名</th>
+          <th>発声テキスト</th>
+          <th style="width:140px;">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tblVoiceConfigBody">
+        <!-- Populated dynamically -->
+      </tbody>
+    </table>
+  </div>
+
+  <h2 style="margin-top:24px;">テキスト即時テスト発声</h2>
+  <div class="row" style="gap:8px; align-items:center;">
+    <input type="text" id="txtTestSay" placeholder="自由文を入力 (例: きょうはいいてんきだね)" style="width:260px;" value="きょうはいいてんきだね">
+    <button id="btnTestSay" class="primary" onclick="testSayText()">テスト発声（ランダムフィラー＋自由文）</button>
+    <button id="btnRandomFiller" type="button" onclick="setRandomFiller()">単体フィラー選定</button>
+  </div>
+  <div class="note" style="margin-top:4px;">
+    ※ 自由文の発話時は、実機が先頭にランダムなフィラー（「うん」「そうだね」「うーんと」等）をゼロ遅延で先行再生し、続けて自由文を合成再生します。
+  </div>
+</div>
+
+<!-- Tab 4: Realtime Device Voice & Quantization Test (DLS-026) -->
+<div id="tabPanelVoiceTest" class="tab-panel">
+  <h2>1. デバイス・ストレージ容量 (Flash / LittleFS)</h2>
+  <p class="sub">AtomS3R 内蔵 Flash (8MB) および LittleFS 領域 (約 4.4MB) の空き容量と、各量子化形式での保存可能秒数シミュレーションです。</p>
+  
+  <div class="stats" style="margin-bottom:16px;">
+    <div class="stat"><div class="k">LittleFS 全体</div><div class="v" id="stFsTotal">-</div></div>
+    <div class="stat"><div class="k">使用中 (モデル+辞書+WAV)</div><div class="v" id="stFsUsed">-</div></div>
+    <div class="stat"><div class="k">空き容量 (Free)</div><div class="v" id="stFsFree" style="color:var(--ok);">-</div></div>
+    <div class="stat"><div class="k">4bit ADPCM 保存可能</div><div class="v" id="stCapAdpcm">-</div></div>
+    <div class="stat"><div class="k">16bit PCM 保存可能</div><div class="v" id="stCapPcm">-</div></div>
+  </div>
+
+  <h2>2. WAV 量子化別の音質比較・実機試聴</h2>
+  <p class="sub">
+    テスト音声（実機生成音声 / 相づち等）を、量子化方式を変えて AtomS3R 実機スピーカーから鳴らし音質差を比較します。<br>
+    ※ 4-bit IMA-ADPCM は 16-bit PCM の 1/4 の容量で、小型スピーカーにおいて同等の自然な再生が可能です。
+  </p>
+
+  <div class="row" style="margin-bottom:12px;">
+    <label>発話テキスト: 
+      <input type="text" id="txtQuantTestSpeech" style="width:260px;" value="うん、そうだね">
+    </label>
+    <span class="note" style="align-self:center;">※ 空欄の場合は「うん、そうだね」が再生されます</span>
+  </div>
+
+  <div class="row" style="gap:12px; margin-bottom:16px;">
+    <div style="border:1px solid var(--line); border-radius:8px; padding:12px; flex:1; min-width:200px;">
+      <div style="font-weight:bold;">① 16-bit リニア PCM</div>
+      <div class="note" style="margin:4px 0 8px;">ビットレート: 32.0 KB/s (基準・無圧縮)</div>
+      <button class="primary" onclick="testDeviceQuant(0)">実機で再生 (16bit)</button>
+      <button onclick="testBrowserQuant(0)">PCで試聴</button>
+    </div>
+
+    <div style="border:1px solid var(--line); border-radius:8px; padding:12px; flex:1; min-width:200px;">
+      <div style="font-weight:bold;">② 8-bit リニア PCM</div>
+      <div class="note" style="margin:4px 0 8px;">ビットレート: 16.0 KB/s (1/2容量 / サー音あり)</div>
+      <button class="primary" onclick="testDeviceQuant(1)">実機で再生 (8bit)</button>
+      <button onclick="testBrowserQuant(1)">PCで試聴</button>
+    </div>
+
+    <div style="border:1px solid var(--line); border-radius:8px; padding:12px; flex:1; min-width:200px;">
+      <div style="font-weight:bold; color:var(--ok);">③ 4-bit IMA-ADPCM (推奨)</div>
+      <div class="note" style="margin:4px 0 8px;">ビットレート: 8.0 KB/s (1/4容量 / 高音質)</div>
+      <button class="primary" onclick="testDeviceQuant(2)">実機で再生 (4bit ADPCM)</button>
+      <button onclick="testBrowserQuant(2)">PCで試聴</button>
+    </div>
+  </div>
+
+  <h2>3. 発話パイプライン比較 (HTS ストリーミング vs モーラ WAV 連結)</h2>
+  <p class="sub">
+    入力テキストを「HTS 音声合成（自然な抑揚・150msバッファ）」で鳴らすか、「モーラ WAV 連結（平坦・ゼロ遅延）」で鳴らすかを実機比較します。
+  </p>
+  <div class="row" style="margin-bottom:8px;">
+    <input type="text" id="txtPipelineTest" style="width:320px;" value="うん、そうだね。きょうはいいてんきだね">
+    <button class="primary" onclick="testPipelineSay(false)">HTS ストリーミング合成</button>
+    <button onclick="testPipelineSay(true)">WAV 連結のみ (即時・ロボ声)</button>
+  </div>
+  <div id="pipelineLog" class="note" style="font-family:monospace; margin-top:4px;"></div>
+</div>
+
+<!-- Tab 2: Sensor Recording (Existing) -->
+<div id="tabPanelRecord" class="tab-panel">
+<h2>2. 受信状況</h2>
+<div class="stats">
+  <div class="stat"><div class="k">受信レート</div><div class="v" id="stRate">-</div></div>
+  <div class="stat"><div class="k">サンプル数</div><div class="v" id="stSamples">0</div></div>
+  <div class="stat"><div class="k">欠損 (seq gap)</div><div class="v" id="stLost">0</div></div>
+  <div class="stat"><div class="k">欠損率</div><div class="v" id="stLossRate">-</div></div>
+  <div class="stat"><div class="k">device drop</div><div class="v" id="stDrop">0</div></div>
+</div>
+<div style="margin-top:8px">
+  <canvas id="cvAccel"></canvas>
+  <div class="note">accel (X=赤 / Y=緑 / Z=青)</div>
+</div>
+<div style="margin-top:8px">
+  <canvas id="cvGyro"></canvas>
+  <div class="note">gyro (X=赤 / Y=緑 / Z=青)</div>
+</div>
+
+<h2>3. 収録</h2>
+<div class="row">
+  <label>動作
+    <select id="selLabel"></select>
+  </label>
+  <label>試行回数 <input type="number" id="numTrials" value="20" min="1" max="200"></label>
+  <label>1試行の長さ(秒) <input type="number" id="numDur" value="3" min="1" max="20" step="0.5"></label>
+  <label>準備(秒) <input type="number" id="numPrep" value="3" min="1" max="10" step="0.5"></label>
+</div>
+<div class="row">
+  <button id="btnRun" class="primary" disabled>この動作を収録</button>
+  <button id="btnAbort" disabled>中止</button>
+  <label><input type="checkbox" id="chkBeep" checked> ビープで誘導（本体スピーカー）</label>
+</div>
+<div id="cue">待機中</div>
+
+<h2>4. 収録状況・進捗一覧</h2>
+<div class="scroll" style="margin-bottom:12px">
+  <table id="tblProgress">
+    <thead><tr><th>動作</th><th>収録済み試行数</th><th>目標</th><th>状態</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<h2>5. 試行詳細・ダウンロード</h2>
+<div class="row">
+  <button id="btnCsv" disabled>CSV をダウンロード</button>
+  <button id="btnMeta" disabled>meta JSON をダウンロード</button>
+  <button id="btnClear" disabled>全消去</button>
+</div>
+<div class="scroll">
+  <table id="tblTrials">
+    <thead><tr><th>動作</th><th>試行</th><th>サンプル</th><th>欠損</th><th>seq 範囲</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+</div><!-- End of tabPanelRecord -->
+
+<h2>システムログ</h2>
+<div id="log"></div>
+
+<script>
+'use strict';
+(() => {
+  // ---- wire 仕様 (firmware/main/wire_format.h と対) ----
+  const SERVICE_UUID = 'a1b20000-5d3f-4e8a-9c21-7f6e5d4c3b2a';
+  const STREAM_UUID  = 'a1b20001-5d3f-4e8a-9c21-7f6e5d4c3b2a';
+  const CTRL_UUID    = 'a1b20002-5d3f-4e8a-9c21-7f6e5d4c3b2a';
+  const STATUS_UUID  = 'a1b20003-5d3f-4e8a-9c21-7f6e5d4c3b2a';
+  const INFO_UUID    = 'a1b20004-5d3f-4e8a-9c21-7f6e5d4c3b2a';
+
+  const HDR_BYTES = 11, SAMPLE_BYTES = 18;
+  const CTRL_START = 0x01, CTRL_STOP = 0x02, CTRL_SET_ODR = 0x03, CTRL_MARKER = 0x04;
+  const CTRL_BEEP = 0x05;
+  const STATUS_MARKER = 0x84, STATUS_STATE = 0x85, STATUS_BEEP = 0x86, STATUS_MOTION = 0x87;
+  const CTRL_VOICE_CFG_SET = 0x10, CTRL_VOICE_CFG_SAVE = 0x11, CTRL_VOICE_CFG_LOAD = 0x12, CTRL_VOICE_SAY = 0x13, CTRL_VOICE_SET_VOL = 0x14;
+  const CTRL_VOICE_TEST_QUANT = 0x15, CTRL_VOICE_SAY_WAV = 0x16;
+  const STATUS_VOICE_CFG_ITEM = 0x90, STATUS_VOICE_VOL = 0x91;
+
+  const DEFAULT_VOICE_CONFIGS = [
+    { key: "tap1",           name: "1回たたく (tap1)",                 text: "タップいち" },
+    { key: "tap2",           name: "2回たたく (tap2)",                 text: "タップに" },
+    { key: "tap3",           name: "3回たたく (tap3)",                 text: "タップさん" },
+    { key: "nod",            name: "うなずく (nod)",                   text: "うなずき" },
+    { key: "rock",           name: "寝かしつけ (rock)",               text: "ねかしつけ" },
+    { key: "spin180",        name: "180度回転 (spin180)",             text: "はんてん" },
+    { key: "tilt_lr",        name: "首かしげ (tilt_lr)",               text: "かしげ" },
+    { key: "turn_lr",        name: "見回す (turn_lr)",                 text: "みまわし" },
+    { key: "calib_start",    name: "静止待機開始 (calib_start)",        text: "" },
+    { key: "calib_complete", name: "基準点設定成功 (calib_complete)", text: "せいこう" },
+    { key: "calib_failed",   name: "基準点設定失敗 (calib_failed)",   text: "しっぱい" },
+    { key: "wakeup",         name: "正立復帰・起床 (wakeup)",         text: "おきたよ" },
+  ];
+  let voiceConfigs = JSON.parse(JSON.stringify(DEFAULT_VOICE_CONFIGS));
+
+  const MOTION_NAMES = {
+    1: { id: "tap1",    name: "1回たたく (tap1)" },
+    2: { id: "tap2",    name: "2回たたく (tap2)" },
+    3: { id: "tap3",    name: "3回たたく (tap3)" },
+    4: { id: "nod",     name: "うなずく (nod)" },
+    5: { id: "rock",    name: "寝かしつけ (rock)" },
+    6: { id: "spin180", name: "180度回転 (spin180)" },
+    7: { id: "tilt_lr", name: "首かしげ (tilt_lr)" },
+    8: { id: "turn_lr", name: "見回す (turn_lr)" },
+    9: { id: "calib_start", name: "キャリブレーション待機中..." },
+    10: { id: "calib_ok", name: "基準点設定完了 (calib_ok)" },
+    11: { id: "calib_ng", name: "基準点設定失敗 (calib_ng)" },
+    12: { id: "wakeup",   name: "正立復帰・起床 (wakeup)" },
+  };
+  const motionCounts = { tap1:0, tap2:0, tap3:0, nod:0, rock:0, spin180:0, tilt_lr:0, turn_lr:0 };
+  const UI_VERSION = '1.4.0 (DLS-018: アクション発声設定タブ追加)';
+
+  // spec.md の 8 動作 + ネガティブ区間。
+  // 陽性だけでは誤検出率が測れないので、ネガティブを収録対象に含める。
+  // spec.md の 8 動作 + ネガティブ区間。
+  // 各パターンの推奨試行回数 (第3引数): 陽性=20回、ネガティブ=5〜10回 (DLS-015)。
+  const LABELS = [
+    ['tap1',    '1回たたく',                     20],
+    ['tap2',    '2回たたく',                     20],
+    ['tap3',    '3回たたく',                     20],
+    ['tilt_lr', '左右に傾ける（首をかしげる）', 20],
+    ['turn_lr', '左右に回す（見回す）',         20],
+    ['nod',     '前後に傾ける（うなずく）',       20],
+    ['rock',    '横にして揺らす（寝かしつけ）',   20],
+    ['spin180', '180度回して戻す',               20],
+    ['baseline','― 静止（基準点・ノイズ測定）',   5],
+    ['carry',   '― 普通に持つ・抱っこ・持ち替え', 10],
+    ['putdown', '― 机に置く',                    5],
+    ['bump',    '― ぶつける / 机を叩く',         5],
+  ];
+
+  function getTargetTrials(label) {
+    const item = LABELS.find((l) => l[0] === label);
+    return item ? item[2] : 20;
+  }
+
+  const $ = (id) => document.getElementById(id);
+
+  let device = null, server = null;
+  let chStream = null, chCtrl = null, chStatus = null, chInfo = null;
+  let info = null;
+  let userDisconnect = false;
+
+  // 受信状態
+  let expectedSeq = null;
+  let totalSamples = 0, totalLost = 0, deviceDropped = 0;
+  let rateCount = 0, rateLastMs = performance.now();
+
+  // 波形表示用リングバッファ
+  const PLOT_N = 800;
+  const plot = { ax:new Int16Array(PLOT_N), ay:new Int16Array(PLOT_N), az:new Int16Array(PLOT_N),
+                 gx:new Int16Array(PLOT_N), gy:new Int16Array(PLOT_N), gz:new Int16Array(PLOT_N),
+                 head:0, filled:0 };
+
+  // 収録
+  let capturing = false;      // 収録中 (行を貯める)
+  let captureRows = [];       // 進行中の試行の行
+  let captureLost = 0;
+  let curLabel = '', curTrial = 0, curPhase = '';
+  let markerSeq = 0;
+  let abortRequested = false;
+  let runStartMs = 0;         // 切断が収録開始から何 ms 後かを出すための基準
+  const trials = [];          // 確定した試行のメタ
+  const allRows = [];         // 全行 (CSV 出力用)
+
+  // 誘導音は Voice Base (Atomic Echo Base) から鳴らす。収録中ユーザーはおもちゃを
+  // 両手で持って PC から離れるため、PC のスピーカーでは聞こえない (DLS-008)。
+  // スピーカーは IMU と同じ筐体に載るので、鳴った位置 (seq) を控えて meta に残す。
+  const beepEvents = [];
+
+  // ------------------------------------------------------------- log
+  function log(msg, cls) {
+    const el = $('log');
+    const t = new Date().toTimeString().slice(0, 8);
+    const line = document.createElement('div');
+    if (cls) line.className = cls;
+    line.textContent = `[${t}] ${msg}`;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // 収録が止まった理由が DevTools のコンソールにしか出ないと、手元の画面からは
+  // 消える。P1-10 の切り分けは 1 回の試行から取れる情報が多いほどよいので、
+  // JS の例外と未処理 reject はページのログにも流す。
+  window.addEventListener('error', (e) => {
+    log(`JS エラー: ${e.message} @ ${e.filename}:${e.lineno}`, 'ng');
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    const r = e.reason;
+    log(`未処理の reject: ${(r && r.message) || r}`, 'ng');
+  });
+
+
+  // ------------------------------------------------------------- Motion Tab UI
+  window.switchTab = (tab) => {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    if (tab === 'motion') {
+      $('tabBtnMotion').classList.add('active');
+      $('tabPanelMotion').classList.add('active');
+    } else if (tab === 'voice') {
+      $('tabBtnVoice').classList.add('active');
+      $('tabPanelVoice').classList.add('active');
+    } else if (tab === 'voicetest') {
+      $('tabBtnVoiceTest').classList.add('active');
+      $('tabPanelVoiceTest').classList.add('active');
+      updateFsCapacityUI();
+    } else {
+      $('tabBtnRecord').classList.add('active');
+      $('tabPanelRecord').classList.add('active');
+    }
+  };
+
+  function initMotionGrid() {
+    const grid = $('motionGrid');
+    grid.innerHTML = '';
+    for (let id = 1; id <= 8; id++) {
+      const m = MOTION_NAMES[id];
+      const card = document.createElement('div');
+      card.className = 'motion-card';
+      card.id = `mcard-${m.id}`;
+      card.innerHTML = `<div class="m-title">${m.name}</div><div class="m-val" id="mcnt-${m.id}">0</div>`;
+      grid.appendChild(card);
+    }
+  }
+
+  let bannerTimer = null;
+  function handleMotionEvent(eventId, seq, tUs) {
+    const meta = MOTION_NAMES[eventId];
+    const name = meta ? meta.name : `unknown (${eventId})`;
+    const key = meta ? meta.id : `unk_${eventId}`;
+
+    if (motionCounts[key] !== undefined) {
+      motionCounts[key]++;
+      $(`mcnt-${key}`).textContent = motionCounts[key];
+      const card = $(`mcard-${key}`);
+      if (card) {
+        card.classList.add('active');
+        setTimeout(() => card.classList.remove('active'), 600);
+      }
+    }
+
+    // Banner
+    const banner = $('motionBanner');
+    const curName = $('motionCurName');
+    const curMeta = $('motionMeta');
+    curName.textContent = name;
+    curMeta.textContent = `seq: ${seq} / device: ${tUs} µs (${new Date().toLocaleTimeString()})`;
+    banner.classList.add('highlight');
+    if (bannerTimer) clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(() => banner.classList.remove('highlight'), 1200);
+
+    // History Table
+    const tbody = $('tblMotionHistory').querySelector('tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${new Date().toLocaleTimeString()}</td><td><b>${key}</b></td><td>${name}</td><td>${seq}</td><td>${tUs}</td>`;
+    tbody.insertBefore(tr, tbody.firstChild);
+    if (tbody.children.length > 50) {
+      tbody.removeChild(tbody.lastChild);
+    }
+
+    log(`[MOTION] 検出: ${name} (seq=${seq})`, 'ok');
+  }
+
+  // ------------------------------------------------------------- BLE
+  async function connect() {
+    if (!navigator.bluetooth) {
+      log('Web Bluetooth が使えない (Chromium 系 + localhost/HTTPS が要る)', 'ng');
+      return;
+    }
+    try {
+      log('requestDevice (service filter) ...');
+      device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID] }] });
+      log(`device: ${device.name || '(no name)'}`, 'ok');
+      device.addEventListener('gattserverdisconnected', onDisconnected);
+      await acquire();
+    } catch (e) {
+      log(`接続エラー: ${e.message}`, 'ng');
+    }
+  }
+
+  async function acquire() {
+    server = await device.gatt.connect();
+    const svc = await server.getPrimaryService(SERVICE_UUID);
+
+    chStream = await svc.getCharacteristic(STREAM_UUID);
+    chCtrl   = await svc.getCharacteristic(CTRL_UUID);
+    chStatus = await svc.getCharacteristic(STATUS_UUID);
+    chInfo   = await svc.getCharacteristic(INFO_UUID);
+    log('characteristic 4本 取得', 'ok');
+
+    const dv = await chInfo.readValue();
+    info = JSON.parse(new TextDecoder().decode(dv));
+    $('infoView').textContent =
+      `fw=${info.fw} imu=${info.imu} odr=${info.odr_hz}Hz n_max=${info.n_max} axes=${info.axes}`;
+    updateFsCapacityUI();
+    $('selOdr').value = String(info.odr_hz);
+    log(`INFO: ${JSON.stringify(info)}`, 'ok');
+
+    await chStatus.startNotifications();
+    chStatus.addEventListener('characteristicvaluechanged', onStatus);
+    await chStream.startNotifications();
+    chStream.addEventListener('characteristicvaluechanged', onStream);
+    log('notify 購読 (STREAM / STATUS)', 'ok');
+
+    await writeCtrl(new Uint8Array([CTRL_START]));
+    try {
+      await writeCtrl(new Uint8Array([CTRL_VOICE_CFG_LOAD]));
+    } catch (e) {
+      console.warn('Voice config load failed on connect', e);
+    }
+    setConnected(true);
+  }
+
+  function onDisconnected() {
+    // 切断位置をデバイス側のシリアルログ (`disconnected reason=N`) と突き合わせる
+    // ため、stopRun より先に控える。どちらが切断を起こしたかの判断材料になる。
+    const at = runStartMs ? `収録開始 +${Math.round(performance.now() - runStartMs)}ms`
+                          : '収録外';
+    setConnected(false);
+    stopRun('切断');
+    log(userDisconnect ? '切断しました' : 'デバイスが切断された', userDisconnect ? '' : 'ng');
+    if (!userDisconnect) {
+      log(`切断位置: ${at} / ${curLabel || '-'} 試行 ${curTrial} ${curPhase || '-'}`
+          + ` / 受信 ${totalSamples} 件`, 'ng');
+    }
+  }
+
+  async function disconnect() {
+    userDisconnect = true;
+    try { await writeCtrl(new Uint8Array([CTRL_STOP])); } catch (e) { /* 切断中は無視 */ }
+    if (device && device.gatt.connected) device.gatt.disconnect();
+  }
+
+  function setConnected(on) {
+    $('connState').textContent = on ? '接続中' : '未接続';
+    $('connState').className = on ? 'ok' : 'ng';
+    $('btnConnect').disabled = on;
+    $('btnDisconnect').disabled = !on;
+    $('btnApplyOdr').disabled = !on;
+    $('btnRun').disabled = !on;
+    if (!on) { expectedSeq = null; }
+  }
+
+  // Web Bluetooth は GATT 操作を直列化する。前の write の完了前に次を投げると
+  // 'GATT operation already in progress' で弾かれるので、こちらで順番に流す。
+  let ctrlChain = Promise.resolve();
+
+  function writeCtrl(bytes) {
+    ctrlChain = ctrlChain.then(() => {
+      if (!chCtrl) throw new Error('CTRL 未取得');
+      return chCtrl.writeValueWithoutResponse(bytes);
+    });
+    // チェーン自体は失敗を飲み込んで次に進める (1 回の失敗で以降が全部死なないように)。
+    const result = ctrlChain;
+    ctrlChain = ctrlChain.catch(() => {});
+    return result;
+  }
+
+  // ------------------------------------------------------------- 受信
+  function onStatus(ev) {
+    const dv = ev.target.value;
+    const op = dv.getUint8(0);
+    if (op === STATUS_MARKER) {
+      markerSeq = dv.getUint32(5, true);
+      log(`marker id=${dv.getUint32(1, true)} seq=${markerSeq}`);
+    } else if (op === STATUS_STATE) {
+      deviceDropped = dv.getUint32(4, true);
+      $('stDrop').textContent = deviceDropped;
+    } else if (op === STATUS_MOTION) {
+      const eventId = dv.getUint8(1);
+      const seq = dv.getUint32(2, true);
+      const tUs = dv.getUint32(6, true);
+      handleMotionEvent(eventId, seq, tUs);
+    } else if (op === STATUS_VOICE_CFG_ITEM) {
+      handleVoiceCfgItem(dv);
+    } else if (op === STATUS_VOICE_VOL) {
+      const vol = dv.getUint8(1);
+      const rEl = $('rngVoiceVol');
+      if (rEl) rEl.value = vol;
+      const vEl = $('valVoiceVol');
+      if (vEl) vEl.textContent = vol;
+      log(`[VOICE] デバイス音量を受信: ${vol}`);
+    } else if (op === STATUS_BEEP) {
+      beepEvents.push({
+        seq: dv.getUint32(1, true),
+        t_us: dv.getUint32(5, true),
+        freq_hz: dv.getUint16(9, true),
+        ms: dv.getUint16(11, true),
+        label: curLabel, trial: curTrial, phase: curPhase,
+      });
+    }
+  }
+
+  function onStream(ev) {
+    const dv = ev.target.value;
+    if (dv.byteLength < HDR_BYTES) return;
+
+    const seqStart = dv.getUint32(0, true);
+    const pktTUs   = dv.getUint32(4, true);
+    const n        = dv.getUint8(10);
+
+    // seq の連番ギャップ = BLE の取りこぼし。これを見ずに解析すると P3 が無駄になる。
+    if (expectedSeq !== null && seqStart !== expectedSeq) {
+      const gap = (seqStart - expectedSeq) >>> 0;
+      if (gap < 0x80000000) {
+        totalLost += gap;
+        if (capturing) captureLost += gap;
+      }
+    }
+    expectedSeq = (seqStart + n) >>> 0;
+
+    for (let i = 0; i < n; i++) {
+      const o = HDR_BYTES + i * SAMPLE_BYTES;
+      if (o + SAMPLE_BYTES > dv.byteLength) break;
+      const ax = dv.getInt16(o,      true), ay = dv.getInt16(o + 2,  true), az = dv.getInt16(o + 4,  true);
+      const gx = dv.getInt16(o + 6,  true), gy = dv.getInt16(o + 8,  true), gz = dv.getInt16(o + 10, true);
+      const mx = dv.getInt16(o + 12, true), my = dv.getInt16(o + 14, true), mz = dv.getInt16(o + 16, true);
+
+      const h = plot.head;
+      plot.ax[h] = ax; plot.ay[h] = ay; plot.az[h] = az;
+      plot.gx[h] = gx; plot.gy[h] = gy; plot.gz[h] = gz;
+      plot.head = (h + 1) % PLOT_N;
+      if (plot.filled < PLOT_N) plot.filled++;
+
+      if (capturing) {
+        captureRows.push([curLabel, curTrial, curPhase, (seqStart + i) >>> 0, pktTUs, i,
+                          ax, ay, az, gx, gy, gz, mx, my, mz]);
+      }
+      totalSamples++;
+      rateCount++;
+    }
+  }
+
+  function updateStats() {
+    const now = performance.now();
+    const dt = now - rateLastMs;
+    if (dt >= 500) {
+      $('stRate').textContent = `${Math.round(rateCount * 1000 / dt)} Hz`;
+      rateCount = 0; rateLastMs = now;
+    }
+    $('stSamples').textContent = totalSamples;
+    $('stLost').textContent = totalLost;
+    const denom = totalSamples + totalLost;
+    $('stLossRate').textContent = denom > 0 ? `${(100 * totalLost / denom).toFixed(2)} %` : '-';
+  }
+
+  // ------------------------------------------------------------- 波形
+  function drawPlot(canvas, arrs, colors, scale) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+      canvas.width = w * dpr; canvas.height = h * dpr;
+    }
+    const g = canvas.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+
+    const mid = h / 2;
+    g.strokeStyle = 'rgba(128,128,128,.35)';
+    g.beginPath(); g.moveTo(0, mid); g.lineTo(w, mid); g.stroke();
+
+    const n = plot.filled;
+    if (n < 2) return;
+    const start = (plot.head - n + PLOT_N) % PLOT_N;
+
+    for (let a = 0; a < arrs.length; a++) {
+      const buf = arrs[a];
+      g.strokeStyle = colors[a];
+      g.lineWidth = 1;
+      g.beginPath();
+      for (let i = 0; i < n; i++) {
+        const v = buf[(start + i) % PLOT_N];
+        const x = i * w / (n - 1);
+        const y = mid - (v / scale) * mid;
+        if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+  }
+
+  function frame() {
+    updateStats();
+    drawPlot($('cvAccel'), [plot.ax, plot.ay, plot.az], ['#d04545', '#3f9e5a', '#4472d0'], 16384);
+    drawPlot($('cvGyro'),  [plot.gx, plot.gy, plot.gz], ['#d04545', '#3f9e5a', '#4472d0'], 16384);
+    requestAnimationFrame(frame);
+  }
+
+  // ------------------------------------------------------------- 誘導音
+  // 開始・終了は 2 音にする。単音だと準備カウントのチクタクと混ざって
+  // 「今が本番か」が分からない。低→高が開始、高→低が終了で向きが逆になる。
+  const CUE_PREP  = [[660, 50]];             // 準備カウント: 単音の短いチク
+  const CUE_START = [[660, 70], [990, 110]]; // ぴ → ぽ (低→高) = どうぞ
+  const CUE_END   = [[990, 70], [660, 110]]; // ぽ → ぴ (高→低) = おわり
+
+  // デバイス側で鳴らす。await しない (誘導のリズムを BLE の往復で乱さないため)。
+  // 鳴った seq は STATUS_BEEP で返ってくるので beepEvents に溜まる。
+  function beep(cue) {
+    if (!$('chkBeep').checked) return;
+    const two = cue.length > 1;
+    const b = new Uint8Array(two ? 9 : 5);
+    const dv = new DataView(b.buffer);
+    b[0] = CTRL_BEEP;
+    dv.setUint16(1, cue[0][0], true);
+    dv.setUint16(3, cue[0][1], true);
+    if (two) {
+      dv.setUint16(5, cue[1][0], true);
+      dv.setUint16(7, cue[1][1], true);
+    }
+    writeCtrl(b).catch((e) => log(`ビープ送信失敗: ${e.message}`, 'ng'));
+  }
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  function setCue(text, cls) {
+    $('cue').textContent = text;
+    $('cue').className = cls || '';
+  }
+
+  // ------------------------------------------------------------- 収録
+  function getLabelCounts() {
+    const counts = {};
+    for (const [v] of LABELS) counts[v] = 0;
+    for (const tr of trials) {
+      counts[tr.label] = (counts[tr.label] || 0) + 1;
+    }
+    return counts;
+  }
+
+  function updateProgressUI() {
+    const counts = getLabelCounts();
+
+    // Update select options text with per-label target
+    const sel = $('selLabel');
+    const curVal = sel.value;
+    sel.innerHTML = '';
+    for (const [v, t, defaultTarget] of LABELS) {
+      const c = counts[v] || 0;
+      const target = (curVal === v) ? (parseInt($('numTrials').value, 10) || defaultTarget) : defaultTarget;
+      const o = document.createElement('option');
+      o.value = v;
+      o.textContent = `${t} (${v}) [${c}/${target}回]`;
+      if (v === curVal) o.selected = true;
+      sel.appendChild(o);
+    }
+
+    // Update progress table
+    const tbody = $('tblProgress').tBodies[0];
+    tbody.innerHTML = '';
+    for (const [v, t, defaultTarget] of LABELS) {
+      const c = counts[v] || 0;
+      const target = (curVal === v) ? (parseInt($('numTrials').value, 10) || defaultTarget) : defaultTarget;
+      const tr = document.createElement('tr');
+      const isDone = c >= target;
+      const statusText = isDone ? '完了' : (c > 0 ? `残り ${target - c} 回` : '未収録');
+      const statusCls = isDone ? 'ok' : (c > 0 ? 'prep' : 'note');
+
+      tr.innerHTML = `<td>${t} (<code>${v}</code>)</td><td>${c}</td><td>${target}</td><td class="${statusCls}">${statusText}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  async function runSeries() {
+    const label = $('selLabel').value;
+    const targetTrials = parseInt($('numTrials').value, 10);
+    const durMs = Math.round(parseFloat($('numDur').value) * 1000);
+    const prepMs = Math.round(parseFloat($('numPrep').value) * 1000);
+    const labelText = LABELS.find((l) => l[0] === label)[1];
+
+    // 既に記録されている該当ラベルの試行数を確認
+    const existingTrials = trials.filter((tr) => tr.label === label);
+    let maxTrialNum = 0;
+    for (const tr of existingTrials) {
+      if (tr.trial > maxTrialNum) maxTrialNum = tr.trial;
+    }
+
+    let startTrial = maxTrialNum + 1;
+    let endTrial = targetTrials;
+
+    if (startTrial > targetTrials) {
+      // 既に目標件数に達している場合、さらに指定件数分追加する
+      endTrial = maxTrialNum + targetTrials;
+      log(`この動作は既に ${maxTrialNum} 回収録済みです。追加で ${targetTrials} 回 (試行 ${startTrial}〜${endTrial}) 収録します`);
+    } else if (maxTrialNum > 0) {
+      log(`既存の ${maxTrialNum} 回に続き、試行 ${startTrial}〜${endTrial} (残り ${endTrial - startTrial + 1} 回) を再開・追記します`);
+    } else {
+      log(`収録開始: ${label} × ${targetTrials} (各 ${durMs}ms)`);
+    }
+
+    abortRequested = false;
+    runStartMs = performance.now();
+    $('btnRun').disabled = true;
+    $('btnAbort').disabled = false;
+
+    for (let t = startTrial; t <= endTrial && !abortRequested; t++) {
+      // --- 準備: この区間も pre-roll として記録する。動作の入りが切れないように ---
+      curLabel = label; curTrial = t; curPhase = 'prep';
+      captureRows = []; captureLost = 0; capturing = true;
+
+      const prepSteps = Math.ceil(prepMs / 1000);
+      for (let s = prepSteps; s >= 1 && !abortRequested; s--) {
+        setCue(`${labelText}\n${t}/${endTrial}  準備 ${s}`, 'prep');
+        beep(CUE_PREP);
+        await sleep(Math.min(1000, prepMs));
+      }
+      if (abortRequested) break;
+
+      // --- 本番 ---
+      curPhase = 'record';
+      const seqAtStart = expectedSeq;
+      log(`試行 ${t} 本番 (+${Math.round(performance.now() - runStartMs)}ms, seq=${seqAtStart})`);
+      try { await writeCtrl(ctrlMarker(t)); } catch (e) { log(`marker 送信失敗: ${e.message}`, 'ng'); }
+      beep(CUE_START);
+      setCue(`${labelText}\n${t}/${endTrial}  ▶ どうぞ`, 'active');
+      await sleep(durMs);
+      if (abortRequested) break;
+
+      // --- 余韻: 動作の終わりが切れないように後ろも録る ---
+      curPhase = 'post';
+      beep(CUE_END);
+      await sleep(400);
+
+      capturing = false;
+      const rows = captureRows;
+      captureRows = [];
+      if (rows.length === 0) {
+        log(`試行 ${t}: サンプル 0 件 (接続を確認)`, 'ng');
+        continue;
+      }
+      const seqFirst = rows[0][3], seqLast = rows[rows.length - 1][3];
+      trials.push({ label, trial: t, samples: rows.length, lost: captureLost,
+                    seq_start: seqFirst, seq_end: seqLast, marker_seq: markerSeq,
+                    seq_at_start: seqAtStart, dur_ms: durMs, prep_ms: prepMs });
+      for (const r of rows) allRows.push(r);
+      addTrialRow(label, t, rows.length, captureLost, `${seqFirst}–${seqLast}`);
+      initMotionGrid();
+  updateProgressUI();
+      setCue(`${labelText}\n${t}/${endTrial}  記録 ${rows.length} 件`, '');
+      await sleep(600);
+    }
+
+    capturing = false;
+    // 切断で抜けた場合は onDisconnected が既に stopRun('切断') を出している。
+    // ここで '中止' を被せると画面から切断の事実が消えるので上書きしない。
+    if (device && device.gatt && device.gatt.connected) {
+      stopRun(abortRequested ? '中止' : '完了');
+    }
+  }
+
+  function ctrlMarker(id) {
+    const b = new Uint8Array(5);
+    b[0] = CTRL_MARKER;
+    new DataView(b.buffer).setUint32(1, id, true);
+    return b;
+  }
+
+  function stopRun(reason) {
+    capturing = false;
+    abortRequested = true;
+    $('btnRun').disabled = !(device && device.gatt && device.gatt.connected);
+    $('btnAbort').disabled = true;
+    setCue(`待機中 (${reason})`, '');
+    updateDownloadButtons();
+    const conn = device && device.gatt && device.gatt.connected ? '接続あり' : '接続なし';
+    log(`収録 ${reason}: 試行 ${trials.length} 件 / 行 ${allRows.length} / ${conn}`);
+  }
+
+  function addTrialRow(label, trial, samples, lost, seqRange) {
+    const tr = document.createElement('tr');
+    for (const v of [label, trial, samples, lost, seqRange]) {
+      const td = document.createElement('td');
+      td.textContent = v;
+      tr.appendChild(td);
+    }
+    $('tblTrials').tBodies[0].appendChild(tr);
+  }
+
+  function updateDownloadButtons() {
+    const has = allRows.length > 0;
+    $('btnCsv').disabled = !has;
+    $('btnMeta').disabled = !has;
+    $('btnClear').disabled = !has;
+  }
+
+  // ------------------------------------------------------------- 保存
+  function stamp() {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  }
+
+  function download(name, text, mime) {
+    const blob = new Blob([text], { type: mime });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  function buildMeta() {
+    return {
+      ui_version: UI_VERSION,
+      generated_at: new Date().toISOString(),
+      user_agent: navigator.userAgent,
+      device_info: info,
+      totals: { samples: totalSamples, lost_seq_gap: totalLost, device_dropped_pkts: deviceDropped },
+      csv_columns: ['label','trial','phase','seq','pkt_t_us','i','ax','ay','az','gx','gy','gz','mx','my','mz'],
+      notes: [
+        'ADC 生値。デバイス側でキャリブレーション・基準点補正は一切していない。',
+        '軸は BMI270 / BMM150 のセンサ native。M5Unified の board 軸変換は通っていない。',
+        'phase: prep=準備区間(pre-roll) / record=本番 / post=余韻(post-roll)。',
+        'seq のギャップが BLE 取りこぼし。lost を見てから解析すること。',
+        '誘導音は Voice Base のスピーカーから鳴る。IMU と同じ筐体なので鳴動中は加速度に'
+          + ' 振動が乗る (静置実測で |a| の偏差 ±0.006g -> ±0.05g)。beep_events の seq から'
+          + ' seq + freq_ms*odr/1000 の区間がそれに当たる。tap のインパルスとは 2 桁違うが、'
+          + ' 微小な揺れを見る解析では除外すること。',
+      ],
+      trials,
+      beep_events: beepEvents,
+    };
+  }
+
+  function downloadCsv() {
+    // seq が真の時間軸。pkt_t_us と i は、そこからサンプル時刻を復元したい時のために残す
+    // (per-sample のデバイス時刻は wire に載せていない)。
+    // メタ情報（試行範囲、誘導音位置、デバイスINFO等）を先頭の # コメント行に埋め込むことで、
+    // CSV 1 ファイルで完全な解析コンテキストを保持する。
+    const meta = buildMeta();
+    const metaHeader = [
+      '# nonkiact2 IMU recording',
+      `# ui_version: ${meta.ui_version}`,
+      `# generated_at: ${meta.generated_at}`,
+      `# device_info: ${JSON.stringify(meta.device_info)}`,
+      `# totals: ${JSON.stringify(meta.totals)}`,
+      `# trials: ${JSON.stringify(meta.trials)}`,
+      `# beep_events: ${JSON.stringify(meta.beep_events)}`,
+      `# meta_json: ${JSON.stringify(meta)}`,
+      '',
+    ].join('\n');
+
+    const head = 'label,trial,phase,seq,pkt_t_us,i,ax,ay,az,gx,gy,gz,mx,my,mz\n';
+    const body = allRows.map((r) => r.join(',')).join('\n');
+    download(`nonkiact2_imu_${stamp()}.csv`, metaHeader + head + body + '\n', 'text/csv');
+  }
+
+  function downloadMeta() {
+    const meta = buildMeta();
+    download(`nonkiact2_imu_${stamp()}.meta.json`, JSON.stringify(meta, null, 2), 'application/json');
+  }
+
+  function clearAll() {
+    allRows.length = 0;
+    trials.length = 0;
+    beepEvents.length = 0;
+    $('tblTrials').tBodies[0].innerHTML = '';
+    initMotionGrid();
+  updateProgressUI();
+    updateDownloadButtons();
+    log('収録データを消去');
+  }
+
+  // ------------------------------------------------------------- Voice Config UI
+  function renderVoiceConfigTable() {
+    const tbody = $('tblVoiceConfigBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    voiceConfigs.forEach((item) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><code>${item.key}</code></td>
+        <td>${item.name}</td>
+        <td>
+          <input type="text" id="vtxt_${item.key}" value="${item.text || ''}" style="width:100%; max-width:280px;"
+                 onchange="updateVoiceConfigText('${item.key}', this.value)">
+        </td>
+        <td>
+          <button onclick="testSayConfig('${item.key}')">発声テスト</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function handleVoiceCfgItem(dv) {
+    const idx = dv.getUint8(1);
+    const total = dv.getUint8(2);
+    const bytes = new Uint8Array(dv.buffer, dv.byteOffset + 3, dv.byteLength - 3);
+    const decoder = new TextDecoder();
+    let nul1 = -1;
+    for (let i = 0; i < bytes.length; ++i) {
+      if (bytes[i] === 0) { nul1 = i; break; }
+    }
+    if (nul1 < 0) return;
+    const key = decoder.decode(bytes.subarray(0, nul1));
+    let nul2 = bytes.length;
+    for (let i = nul1 + 1; i < bytes.length; ++i) {
+      if (bytes[i] === 0) { nul2 = i; break; }
+    }
+    const text = decoder.decode(bytes.subarray(nul1 + 1, nul2));
+
+    const found = voiceConfigs.find(c => c.key === key);
+    if (found) {
+      found.text = text;
+    } else {
+      const toyNames = {toy_forward: "おもちゃ・前進", toy_back: "おもちゃ・後退", toy_right: "おもちゃ・右", toy_left: "おもちゃ・左"};
+      voiceConfigs.push({ key, name: toyNames[key] || key, text });
+    }
+    renderVoiceConfigTable();
+    $('voiceStatus').textContent = `受信中: ${idx + 1}/${total} (${key})`;
+    if (idx + 1 === total) {
+      $('voiceStatus').textContent = `全 ${total} 件のデバイス設定をロード完了`;
+      log(`[VOICE] デバイス設定 ${total} 件ロード完了`, 'ok');
+    }
+  }
+
+  window.updateVoiceConfigText = async (key, text) => {
+    const found = voiceConfigs.find(c => c.key === key);
+    if (found) found.text = text;
+    if (!chCtrl) return;
+    const enc = new TextEncoder();
+    const kBytes = enc.encode(key);
+    const tBytes = enc.encode(text);
+    const payload = new Uint8Array(1 + kBytes.length + 1 + tBytes.length + 1);
+    payload[0] = CTRL_VOICE_CFG_SET;
+    payload.set(kBytes, 1);
+    payload[1 + kBytes.length] = 0;
+    payload.set(tBytes, 1 + kBytes.length + 1);
+    payload[payload.length - 1] = 0;
+    await writeCtrl(payload);
+    log(`[VOICE] 設定更新: ${key} = '${text}'`);
+  };
+
+  window.loadVoiceConfigsFromDevice = async () => {
+    if (!chCtrl) {
+      alert('デバイスに接続してください');
+      return;
+    }
+    $('voiceStatus').textContent = 'デバイスに設定要求送信中...';
+    await writeCtrl(new Uint8Array([CTRL_VOICE_CFG_LOAD]));
+  };
+
+  window.saveVoiceConfigsToDevice = async () => {
+    if (!chCtrl) {
+      alert('デバイスに接続してください');
+      return;
+    }
+    const enc = new TextEncoder();
+    for (const item of voiceConfigs) {
+      const el = $(`vtxt_${item.key}`);
+      const text = el ? el.value : item.text;
+      item.text = text;
+      const kBytes = enc.encode(item.key);
+      const tBytes = enc.encode(text);
+      const payload = new Uint8Array(1 + kBytes.length + 1 + tBytes.length + 1);
+      payload[0] = CTRL_VOICE_CFG_SET;
+      payload.set(kBytes, 1);
+      payload[1 + kBytes.length] = 0;
+      payload.set(tBytes, 1 + kBytes.length + 1);
+      payload[payload.length - 1] = 0;
+      await writeCtrl(payload);
+    }
+    await writeCtrl(new Uint8Array([CTRL_VOICE_CFG_SAVE]));
+    $('voiceStatus').textContent = 'デバイス(NVS)に保存完了';
+    log('[VOICE] 設定をデバイスの不揮発メモリ(NVS)に保存しました', 'ok');
+  };
+
+  window.resetVoiceConfigsToDefaults = () => {
+    if (!confirm('発声設定をデフォルトに戻しますか？（反映には「デバイスへ保存」を押してください）')) return;
+    voiceConfigs = JSON.parse(JSON.stringify(DEFAULT_VOICE_CONFIGS));
+    renderVoiceConfigTable();
+    $('voiceStatus').textContent = 'デフォルト値にリセット（未保存）';
+  };
+
+  // 登録済み相づち・フィラー12語一覧
+  const FILLER_WORDS = [
+    "うん", "うんうん", "そうだね", "なるほど", "いいね", "はい",
+    "えーっと", "うーんと", "んー", "えっとね", "えへへ", "わーい"
+  ];
+
+  window.setRandomFiller = () => {
+    const word = FILLER_WORDS[Math.floor(Math.random() * FILLER_WORDS.length)];
+    $('txtTestSay').value = word;
+    log(`[VOICE] フィラーをランダム選定: '${word}'`);
+    return word;
+  };
+
+  window.randomFillerAndSay = async () => {
+    const word = window.setRandomFiller();
+    await window.testSayText();
+  };
+
+  window.testSayText = async () => {
+    if (!chCtrl) {
+      alert('デバイスに接続してください');
+      return;
+    }
+    const text = $('txtTestSay').value.trim();
+    if (!text) return;
+    const enc = new TextEncoder();
+    const tBytes = enc.encode(text);
+    const payload = new Uint8Array(1 + tBytes.length + 1);
+    payload[0] = CTRL_VOICE_SAY;
+    payload.set(tBytes, 1);
+    payload[payload.length - 1] = 0;
+    await writeCtrl(payload);
+    const isFiller = FILLER_WORDS.includes(text) || FILLER_WORDS.includes(text.replace(/[、。]/g, ''));
+    if (isFiller) {
+      log(`[VOICE] テスト発声要求 (ゼロ遅延フィラー): '${text}'`, 'ok');
+    } else {
+      log(`[VOICE] テスト発声要求 (HTSストリーミング合成): '${text}'`);
+    }
+  };
+
+  window.onVoiceVolumeInput = (val) => {
+    const el = $("valVoiceVol");
+    if (el) el.textContent = val;
+  };
+
+  window.applyVoiceVolume = async (val) => {
+    const el = $("valVoiceVol");
+    if (el) el.textContent = val;
+    if (!chCtrl) return;
+    const vol = parseInt(val, 10);
+    const payload = new Uint8Array([CTRL_VOICE_SET_VOL, vol]);
+    try {
+      await writeCtrl(payload);
+      log(`[VOICE] 音量を変更: ${vol}`);
+    } catch (e) {
+      log(`[VOICE] 音量変更失敗: ${e.message}`, "ng");
+    }
+  };
+
+  window.testSayConfig = (key) => {
+    const el = $(`vtxt_${key}`);
+    const text = el ? el.value.trim() : "";
+    if (!text) return;
+    $('txtTestSay').value = text;
+    window.testSayText();
+  };
+
+  // ------------------------------------------------------------- Voice & Quant Test (DLS-026)
+  function updateFsCapacityUI() {
+    if (!info || !info.fs_total) return;
+    const totalMB = (info.fs_total / (1024 * 1024)).toFixed(2);
+    const usedMB = (info.fs_used / (1024 * 1024)).toFixed(2);
+    const freeBytes = Math.max(0, info.fs_total - info.fs_used);
+    const freeMB = (freeBytes / (1024 * 1024)).toFixed(2);
+    
+    // 16kHz mono: 4bit ADPCM = 8KB/s, 16bit PCM = 32KB/s
+    const secAdpcm = Math.floor(freeBytes / 8000);
+    const secPcm = Math.floor(freeBytes / 32000);
+    const wordsAdpcm = Math.floor(secAdpcm / 0.7); // 1単語0.7秒換算
+    const wordsPcm = Math.floor(secPcm / 0.7);
+
+    if ($('stFsTotal')) $('stFsTotal').textContent = `${totalMB} MB`;
+    if ($('stFsUsed'))  $('stFsUsed').textContent = `${usedMB} MB`;
+    if ($('stFsFree'))  $('stFsFree').textContent = `${freeMB} MB`;
+    if ($('stCapAdpcm')) $('stCapAdpcm').textContent = `${secAdpcm}秒 (約${wordsAdpcm}語)`;
+    if ($('stCapPcm'))   $('stCapPcm').textContent = `${secPcm}秒 (約${wordsPcm}語)`;
+  }
+
+  window.testDeviceQuant = async (mode) => {
+    if (!chCtrl) { alert('デバイスに接続してください'); return; }
+    const textEl = $('txtQuantTestSpeech');
+    const text = textEl ? textEl.value.trim() : 'うん、そうだね';
+    const enc = new TextEncoder();
+    const tBytes = enc.encode(text);
+    const payload = new Uint8Array(1 + 1 + tBytes.length + 1);
+    payload[0] = CTRL_VOICE_TEST_QUANT;
+    payload[1] = mode;
+    payload.set(tBytes, 2);
+    payload[payload.length - 1] = 0;
+    await writeCtrl(payload);
+    const names = ['16-bit PCM', '8-bit PCM', '4-bit IMA-ADPCM'];
+    log(`[VOICE TEST] 実機で ${names[mode]} (テキスト: '${text}') を再生要求`, 'ok');
+  };
+
+  // Web Audio API でブラウザ側でも量子化ノイズ差を生成・試聴
+  window.testBrowserQuant = (mode) => {
+    try {
+      const textEl = $('txtQuantTestSpeech');
+      const text = textEl && textEl.value.trim() ? textEl.value.trim() : 'うん、そうだね';
+      const names = ['16-bit PCM', '8-bit PCM', '4-bit IMA-ADPCM'];
+
+      // Web Speech API が利用可能な場合は音声合成で声の波形に対して量子化ノイズを乗せる
+      if ('speechSynthesis' in window) {
+        const ut = new SpeechSynthesisUtterance(text);
+        ut.lang = 'ja-JP';
+        ut.rate = 1.0;
+        // 8bit/4bit ADPCM の音質ノイズを体感できるよう Web Audio のノードで同時エミュレート
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (mode === 1) {
+          // 8-bit 量子化ノイズ（ホワイトノイズの微細なフロア重畳）
+          const bufferSize = audioCtx.sampleRate * 0.8;
+          const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const output = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            output[i] = (Math.random() * 2 - 1) * 0.035; // 8bit PCM のフロアノイズ
+          }
+          const whiteNoise = audioCtx.createBufferSource();
+          whiteNoise.buffer = noiseBuffer;
+          whiteNoise.connect(audioCtx.destination);
+          whiteNoise.start();
+        } else if (mode === 2) {
+          // 4-bit ADPCM (微細な適応ノイズ・わずかな帯域制限)
+          const bufferSize = audioCtx.sampleRate * 0.8;
+          const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const output = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            output[i] = (Math.random() * 2 - 1) * 0.008; // ADPCM の低ノイズ
+          }
+          const whiteNoise = audioCtx.createBufferSource();
+          whiteNoise.buffer = noiseBuffer;
+          whiteNoise.connect(audioCtx.destination);
+          whiteNoise.start();
+        }
+        window.speechSynthesis.speak(ut);
+        log(`[AUDIO PC] ${names[mode]} (音声: '${text}') をブラウザで試聴再生`);
+        return;
+      }
+
+      // フォールバック: 合成トーン
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      const duration = 0.8;
+      const nSamples = Math.floor(audioCtx.sampleRate * duration);
+      const buffer = audioCtx.createBuffer(1, nSamples, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+
+      let adpcmPred = 0, adpcmIdx = 0;
+      const kStepTab = [
+        7, 8, 9, 10, 11, 12, 13, 14, 16, 17,
+        19, 21, 23, 25, 28, 31, 34, 37, 41, 45,
+        50, 55, 60, 66, 73, 80, 88, 97, 107, 118,
+        130, 143, 157, 173, 190, 209, 230, 253, 279, 307,
+        337, 371, 408, 449, 494, 544, 598, 658, 724, 796,
+        876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878, 2066,
+        2272, 2499, 2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358,
+        5894, 6484, 7132, 7845, 8630, 9493, 10442, 11487, 12635, 13899,
+        15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
+      ];
+      const kIdxTab = [-1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8];
+
+      for (let i = 0; i < nSamples; i++) {
+        const t = i / 16000;
+        const f = 300.0 + 120.0 * (t / 0.8);
+        let env = 1.0;
+        if (t < 0.02) env = t / 0.02;
+        else if (t > 0.7) env = (0.8 - t) / 0.1;
+
+        const val = (0.6 * Math.sin(2 * Math.PI * f * t) +
+                     0.25 * Math.sin(2 * Math.PI * 2 * f * t) +
+                     0.15 * Math.sin(2 * Math.PI * 3 * f * t)) * env;
+        const s16 = Math.max(-32767, Math.min(32767, Math.round(val * 24000)));
+
+        if (mode === 0) {
+          data[i] = s16 / 32768.0;
+        } else if (mode === 1) {
+          const s8 = Math.round(s16 / 256.0);
+          data[i] = (s8 * 256.0) / 32768.0;
+        } else if (mode === 2) {
+          let step = kStepTab[adpcmIdx];
+          let diff = s16 - adpcmPred;
+          let sign = 0;
+          if (diff < 0) { sign = 8; diff = -diff; }
+          let nibble = 0;
+          if (diff >= step) { nibble |= 4; diff -= step; }
+          step >>= 1;
+          if (diff >= step) { nibble |= 2; diff -= step; }
+          step >>= 1;
+          if (diff >= step) { nibble |= 1; }
+          nibble |= sign;
+
+          let step_d = kStepTab[adpcmIdx];
+          let diff_d = step_d >> 3;
+          if (nibble & 1) diff_d += (step_d >> 2);
+          if (nibble & 2) diff_d += (step_d >> 1);
+          if (nibble & 4) diff_d += step_d;
+          if (nibble & 8) adpcmPred -= diff_d;
+          else adpcmPred += diff_d;
+          adpcmPred = Math.max(-32768, Math.min(32767, adpcmPred));
+          adpcmIdx = Math.max(0, Math.min(88, adpcmIdx + kIdxTab[nibble]));
+          data[i] = adpcmPred / 32768.0;
+        }
+      }
+
+      const src = audioCtx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(audioCtx.destination);
+      src.start();
+      log(`[AUDIO PC] ${names[mode]} をブラウザで試聴再生`);
+    } catch (e) {
+      log(`ブラウザ再生エラー: ${e.message}`, 'ng');
+    }
+  };
+
+  window.testPipelineSay = async (wavOnly) => {
+    if (!chCtrl) { alert('デバイスに接続してください'); return; }
+    const text = $('txtPipelineTest').value.trim();
+    if (!text) return;
+    const enc = new TextEncoder();
+    const tBytes = enc.encode(text);
+    const payload = new Uint8Array(1 + tBytes.length + 1);
+    payload[0] = wavOnly ? CTRL_VOICE_SAY_WAV : CTRL_VOICE_SAY;
+    payload.set(tBytes, 1);
+    payload[payload.length - 1] = 0;
+    await writeCtrl(payload);
+    const modeName = wavOnly ? 'WAV連結のみ (即応)' : 'HTS ストリーミング (150msバッファ)';
+    $('pipelineLog').textContent = `[${new Date().toLocaleTimeString()}] 要求送信: '${text}' (${modeName})`;
+    log(`[VOICE] ${modeName} 発声要求: '${text}'`);
+  };
+
+  // ------------------------------------------------------------- init
+  initMotionGrid();
+  renderVoiceConfigTable();
+  updateProgressUI();
+  $('numTrials').value = getTargetTrials($('selLabel').value);
+  $('selLabel').addEventListener('change', () => {
+    $('numTrials').value = getTargetTrials($('selLabel').value);
+    initMotionGrid();
+  updateProgressUI();
+  });
+  $('numTrials').addEventListener('input', updateProgressUI);
+
+  $('btnConnect').addEventListener('click', connect);
+  $('btnDisconnect').addEventListener('click', disconnect);
+  $('btnRun').addEventListener('click', () => {
+    // 例外で抜けると stopRun が走らず、UI が止まった理由が画面に残らない。
+    runSeries().catch((e) => {
+      log(`収録が例外で停止: ${(e && e.message) || e}`, 'ng');
+      stopRun('例外');
+    });
+  });
+  $('btnAbort').addEventListener('click', () => { abortRequested = true; });
+  $('btnCsv').addEventListener('click', downloadCsv);
+  $('btnMeta').addEventListener('click', downloadMeta);
+  $('btnClear').addEventListener('click', clearAll);
+  $('btnApplyOdr').addEventListener('click', async () => {
+    const hz = parseInt($('selOdr').value, 10);
+    const b = new Uint8Array(3);
+    b[0] = CTRL_SET_ODR;
+    new DataView(b.buffer).setUint16(1, hz, true);
+    try {
+      await writeCtrl(b);
+      expectedSeq = null;
+      log(`ODR ${hz}Hz を要求`, 'ok');
+    } catch (e) {
+      log(`ODR 変更失敗: ${e.message}`, 'ng');
+    }
+  });
+
+  requestAnimationFrame(frame);
+  log(`準備完了 (record.html v${UI_VERSION})。接続ボタンを押す。`);
+})();
+</script>
+</body>
+</html>

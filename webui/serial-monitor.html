@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>のんきちゃん USB モニター</title><link rel="stylesheet" href="/model-flasher.css"><style>
+main{max-width:1100px;margin:auto;padding:20px}section{padding:16px;margin:14px 0;border:1px solid #77889966;border-radius:12px}#state{font-size:2rem;font-weight:bold}button,input{margin:5px;padding:10px}button[aria-pressed=true],.active{background:#d4f5df;color:#163d27;border:2px solid #349663}#logs{height:280px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}li{padding:6px;overflow-wrap:anywhere}ol{max-height:350px;overflow:auto}input[type=text]{max-width:90%;width:400px}
+</style><script src="/serial-monitor.js" defer></script></head><body><main>
+<h1>のんきちゃん USB モニター</h1><p>PC の Chrome で USB Serial/JTAG に接続します。ほかのシリアルモニターは閉じてください。</p>
+<section><button id="connect">USB で接続</button><button id="disconnect" disabled>切断</button><span id="connection" role="status">未接続</span><div id="state" aria-live="polite">待受なし（状態未取得）</div><p id="reason"></p></section>
+<section><h2>認識モード</h2><p id="mode">未取得</p><button id="toy" disabled aria-pressed="false">おもちゃ</button><button id="plush" disabled aria-pressed="false">ぬいぐるみ</button><button id="status" disabled>状態を取得</button><p id="wake">起動語: まだありません</p></section>
+<section><h2>認識の履歴</h2><ol id="listens"></ol></section>
+<section><h2>発話の履歴</h2><ol id="speeches"></ol><form id="sayForm"><label for="say">say</label><input id="say" type="text" placeholder="話してほしい文" maxlength="127"><button id="sendSay" disabled>送信</button></form></section>
+<section><h2>生ログ</h2><label>絞り込み <input id="filter" type="text"></label><label><input id="scroll" type="checkbox" checked>自動スクロール</label><pre id="logs"></pre></section>
+</main></body></html>

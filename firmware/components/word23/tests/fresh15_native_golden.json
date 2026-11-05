@@ -1,0 +1,666 @@
+{
+  "schema": "nonkiact2-word23-fresh15-native-golden-v1",
+  "stt32_commit": "e1624dec702e5cd26a09fe2b96510c5a6d6a90e3",
+  "model_npz_sha256": "48bb5ff9af9ade3eac7895265a561995e7a5053ba54bf4fc79bcfc8b4cec8843",
+  "references": [
+    {
+      "source": "artifacts/word23_v0_4_accel_20261001_01/inputs.jsonl",
+      "sha256": "434d0b9bb1cf52f958ef03d546ec4097bf4239ba563f2d9d41984d838779488c"
+    },
+    {
+      "source": "artifacts/word23_v0_4_accel_20261001_01/golden_predictions.jsonl",
+      "sha256": "cc7f10ebbe396e031c6af34839762d56a57048f52dd48392fbc7dbc1223905da"
+    },
+    {
+      "source": "artifacts/word23_mixed_model_v0_4/postlock_fresh15_diagnostic.json",
+      "sha256": "40dbc0e66c71144c963c0c804cbb4122461314184e2479d268d8c76e2c440a1b"
+    }
+  ],
+  "rows": [
+    {
+      "trial_id": "unknown_01",
+      "kind": "unknown",
+      "expected": 9,
+      "native_id": "fresh15:unknown:unknown_01:trim",
+      "native_index": 4515,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/unknown_01/a000001/recording.wav",
+      "wav_sha256": "f69abe41d083fedf60b9adacc7d03a5d857b2cf978bf9dda852bb3150512f50b",
+      "trimmed_pcm_sha256": "76559797ad9a9318c796dd25a0c7c24bb41962af984303192dac80beca6f7480",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -45.13216002979562,
+        "threshold_dbfs": -35.13216002979562,
+        "peak_frame_rms_dbfs": -13.19381147065849,
+        "active_frames": 23,
+        "start_sample": 22720,
+        "end_sample": 40640,
+        "status": "trimmed"
+      },
+      "native_probabilities": [
+        0.0569550022482872,
+        0.06089271977543831,
+        0.1452113389968872,
+        0.0008441560203209519,
+        6.411780304915737e-06,
+        0.001347897807136178,
+        0.000690752174705267,
+        0.2168709635734558,
+        6.85507711750688e-06,
+        0.5171738862991333
+      ],
+      "python_probabilities": [
+        0.05695498734712601,
+        0.060892704874277115,
+        0.145211324095726,
+        0.0008441554382443428,
+        6.411769390979316e-06,
+        0.0013478968758136034,
+        0.0006907516508363187,
+        0.2168709635734558,
+        6.855065294075757e-06,
+        0.5171740055084229
+      ]
+    },
+    {
+      "trial_id": "silence_01",
+      "kind": "silence",
+      "expected": 9,
+      "native_id": "fresh15:silence:silence_01:trim",
+      "native_index": 4517,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/silence_01/a000001/recording.wav",
+      "wav_sha256": "72e84ff77af7a84737072ce0126f9c5665fa229fccfff3fd642a2bce77315c23",
+      "trimmed_pcm_sha256": "3aaa1c2f916f9f71a3245eb4033f486cc6ab9f41314ab662354c535f5bab974b",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -45.29010942625724,
+        "threshold_dbfs": -35.29010942625724,
+        "peak_frame_rms_dbfs": -39.675025632797485,
+        "active_frames": 0,
+        "start_sample": 0,
+        "end_sample": 48000,
+        "status": "no_activity_retained"
+      },
+      "native_probabilities": [
+        0.0034436306450515985,
+        3.707462747115642e-05,
+        0.9929808378219604,
+        0.00013260511332191527,
+        8.381979569094256e-06,
+        1.826359766710084e-05,
+        1.706666949985447e-07,
+        0.0007785497000440955,
+        6.314668553386582e-06,
+        0.002594300778582692
+      ],
+      "python_probabilities": [
+        0.003443631809204817,
+        3.707466021296568e-05,
+        0.9929807186126709,
+        0.0001326050842180848,
+        8.381994121009484e-06,
+        1.82636285899207e-05,
+        1.7066699342649372e-07,
+        0.0007785499328747392,
+        6.314679467323003e-06,
+        0.002594301477074623
+      ]
+    },
+    {
+      "trial_id": "positive_02",
+      "kind": "positive",
+      "expected": 1,
+      "native_id": "fresh15:positive:positive_02:trim",
+      "native_index": 4519,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/positive_02/a000001/recording.wav",
+      "wav_sha256": "eac40a0f9bfdc4aa1208bb1e81ba13364e3f04102be0275eb8f5ab86cfd56911",
+      "trimmed_pcm_sha256": "b3fd65cc6c0d18f7a83ec36c1826f14af8d1a5b43083a4b15814b626131d045a",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -46.667732732149396,
+        "threshold_dbfs": -36.667732732149396,
+        "peak_frame_rms_dbfs": -17.11390155420569,
+        "active_frames": 19,
+        "start_sample": 17920,
+        "end_sample": 37120,
+        "status": "trimmed"
+      },
+      "native_probabilities": [
+        0.004636794328689575,
+        0.6567927598953247,
+        0.05518525838851929,
+        0.011280607432126999,
+        4.2201299947919324e-05,
+        0.0001818264863686636,
+        3.327674221509369e-06,
+        0.001905913231894374,
+        2.581203716545133e-06,
+        0.2699688673019409
+      ],
+      "python_probabilities": [
+        0.004629213362932205,
+        0.6568120121955872,
+        0.055140938609838486,
+        0.011265532113611698,
+        4.2065799789270386e-05,
+        0.00018133151752408594,
+        3.3141566291305935e-06,
+        0.0020269895903766155,
+        2.5704998733999673e-06,
+        0.2698960602283478
+      ]
+    },
+    {
+      "trial_id": "positive_03",
+      "kind": "positive",
+      "expected": 2,
+      "native_id": "fresh15:positive:positive_03:trim",
+      "native_index": 4521,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/positive_03/a000001/recording.wav",
+      "wav_sha256": "2cd445d899a231f01ec4dcc46921eafebf68ed74f0bfd43c16b84e3f355bb16a",
+      "trimmed_pcm_sha256": "d0bb267d563e18f15c74eb10439c8ee52a248cf6b641ba700daacf39894add35",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -46.471789734639636,
+        "threshold_dbfs": -36.471789734639636,
+        "peak_frame_rms_dbfs": -15.379552283941983,
+        "active_frames": 41,
+        "start_sample": 26560,
+        "end_sample": 47040,
+        "status": "trimmed"
+      },
+      "native_probabilities": [
+        5.734693786507705e-06,
+        1.1396732446655733e-07,
+        0.9996263980865479,
+        0.00021091208327561617,
+        3.6245861867456597e-09,
+        2.8326887786533916e-06,
+        4.239632200864207e-09,
+        6.202190434123622e-06,
+        5.302440058585489e-06,
+        0.00014253737754188478
+      ],
+      "python_probabilities": [
+        5.734720161854057e-06,
+        1.1396806343100252e-07,
+        0.9996262788772583,
+        0.00021091285452712327,
+        3.6246132761874605e-09,
+        2.832701738952892e-06,
+        4.2396641752873165e-09,
+        6.202213171491167e-06,
+        5.302464614942437e-06,
+        0.00014253777044359595
+      ]
+    },
+    {
+      "trial_id": "positive_06",
+      "kind": "positive",
+      "expected": 5,
+      "native_id": "fresh15:positive:positive_06:trim",
+      "native_index": 4523,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/positive_06/a000001/recording.wav",
+      "wav_sha256": "7321d98be13e5744a755b988a2b8dfa0cf215ea76ca9b9082551d5d835f42901",
+      "trimmed_pcm_sha256": "3144585b86e3eb85d85bd420ea94752c9ce6b60e72995b826b3bbf0f3673f479",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -46.35889792764203,
+        "threshold_dbfs": -36.35889792764203,
+        "peak_frame_rms_dbfs": -12.035720898851528,
+        "active_frames": 31,
+        "start_sample": 24640,
+        "end_sample": 42880,
+        "status": "trimmed"
+      },
+      "native_probabilities": [
+        0.008397196419537067,
+        0.00024108287470880896,
+        0.11831815540790558,
+        0.0001702131557976827,
+        6.456008577515604e-06,
+        0.7230238914489746,
+        0.0001381303445668891,
+        0.14579929411411285,
+        1.2143177627876867e-06,
+        0.0039043885190039873
+      ],
+      "python_probabilities": [
+        0.008426775224506855,
+        0.00022638811788056046,
+        0.11845659464597702,
+        0.00017140460840892047,
+        6.520098850160139e-06,
+        0.7227082848548889,
+        0.00013912295980844647,
+        0.14594285190105438,
+        1.2281914223422064e-06,
+        0.003920804709196091
+      ]
+    },
+    {
+      "trial_id": "positive_01",
+      "kind": "positive",
+      "expected": 0,
+      "native_id": "fresh15:positive:positive_01:trim",
+      "native_index": 4525,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/positive_01/a000001/recording.wav",
+      "wav_sha256": "36762048b1a690a31d86788bfae2ae16fc3e338b2daaffadd66c135de2ff9c56",
+      "trimmed_pcm_sha256": "71cfdaf920659943793b2d2d947d649d4f31aa3a0da2c592cbd28f94c07c9bd3",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -46.752624924456484,
+        "threshold_dbfs": -36.752624924456484,
+        "peak_frame_rms_dbfs": -15.118188392291326,
+        "active_frames": 24,
+        "start_sample": 25280,
+        "end_sample": 36160,
+        "status": "trimmed"
+      },
+      "native_probabilities": [
+        0.9767178893089294,
+        0.0006135425064712763,
+        0.008538645692169666,
+        6.534770363941789e-06,
+        0.001351785846054554,
+        0.0006552893901243806,
+        0.0027885769959539175,
+        0.0031809729989618063,
+        2.777015197352739e-06,
+        0.006143927574157715
+      ],
+      "python_probabilities": [
+        0.9764541387557983,
+        0.000623209634795785,
+        0.008624061942100525,
+        6.7030905483989045e-06,
+        0.0013707481557503343,
+        0.0006655203178524971,
+        0.0028232804033905268,
+        0.0032196445390582085,
+        2.8538083824969362e-06,
+        0.0062097953632473946
+      ]
+    },
+    {
+      "trial_id": "silence_03",
+      "kind": "silence",
+      "expected": 9,
+      "native_id": "fresh15:silence:silence_03:trim",
+      "native_index": 4527,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/silence_03/a000001/recording.wav",
+      "wav_sha256": "5fac5997f7ee9fa1ff400313bc55b340e51a9c0f70c86cf86c7b5030631a4af3",
+      "trimmed_pcm_sha256": "7fc28d8eb813c4dd438de2734caf27086a7bf395ba2d8cbdd6b05190fd45ba43",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -47.159332997724626,
+        "threshold_dbfs": -37.159332997724626,
+        "peak_frame_rms_dbfs": -42.15737979964758,
+        "active_frames": 0,
+        "start_sample": 0,
+        "end_sample": 48000,
+        "status": "no_activity_retained"
+      },
+      "native_probabilities": [
+        7.773468678351492e-05,
+        1.508191303400963e-06,
+        0.9995278120040894,
+        2.4690640202607028e-05,
+        5.5778844654241766e-08,
+        2.1582777662843e-06,
+        1.238045399531984e-08,
+        6.269378354772925e-05,
+        3.377213531052803e-08,
+        0.00030345036066137254
+      ],
+      "python_probabilities": [
+        7.912017463240772e-05,
+        1.546418729958532e-06,
+        0.9995216131210327,
+        2.344569656997919e-05,
+        5.754591825279931e-08,
+        2.2115013962320518e-06,
+        1.2808627047888876e-08,
+        6.383682193700224e-05,
+        3.2466747512671645e-08,
+        0.0003080743190366775
+      ]
+    },
+    {
+      "trial_id": "silence_02",
+      "kind": "silence",
+      "expected": 9,
+      "native_id": "fresh15:silence:silence_02:trim",
+      "native_index": 4529,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/silence_02/a000001/recording.wav",
+      "wav_sha256": "ab3169cac2625125c5e21e45d37424c51a7316cf5f33cd16b18bdd1c5b5e8393",
+      "trimmed_pcm_sha256": "567c6b595d90b21e2cd7b8b55c62de1741e1333651ec701db5890c23c01e7b50",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -46.60873083132984,
+        "threshold_dbfs": -36.60873083132984,
+        "peak_frame_rms_dbfs": -41.29443898460614,
+        "active_frames": 0,
+        "start_sample": 0,
+        "end_sample": 48000,
+        "status": "no_activity_retained"
+      },
+      "native_probabilities": [
+        0.0001610081671969965,
+        1.7169879356515594e-05,
+        0.9953208565711975,
+        0.0005723924259655178,
+        2.6045499978977205e-08,
+        4.829717454413185e-06,
+        6.870181579188284e-08,
+        0.0020348837133497,
+        1.1582088887962527e-07,
+        0.0018885870231315494
+      ],
+      "python_probabilities": [
+        0.00014931432087905705,
+        1.477369005442597e-05,
+        0.9956606030464172,
+        0.0005309067200869322,
+        2.4126771691612703e-08,
+        4.47691627414315e-06,
+        6.364855664742208e-08,
+        0.001887708087451756,
+        1.1562266877263028e-07,
+        0.0017519748071208596
+      ]
+    },
+    {
+      "trial_id": "positive_09",
+      "kind": "positive",
+      "expected": 8,
+      "native_id": "fresh15:positive:positive_09:trim",
+      "native_index": 4531,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/positive_09/a000001/recording.wav",
+      "wav_sha256": "0c2937a37131dbee83cd6055465b0408b89df2e461d384809bcc8838ad6bb4ab",
+      "trimmed_pcm_sha256": "e894a65c64dd745e2a25d54340ad02bbf2f2710b0c208c9b5fca2e39a7b0e566",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -46.48461290922064,
+        "threshold_dbfs": -36.48461290922064,
+        "peak_frame_rms_dbfs": -15.524340224613425,
+        "active_frames": 32,
+        "start_sample": 21120,
+        "end_sample": 34560,
+        "status": "trimmed"
+      },
+      "native_probabilities": [
+        0.09567077457904816,
+        0.004067169036716223,
+        0.6885865330696106,
+        0.003565719584003091,
+        0.0033386775758117437,
+        0.02106728032231331,
+        0.0010215670336037874,
+        0.002402764745056629,
+        0.1091250628232956,
+        0.07115449011325836
+      ],
+      "python_probabilities": [
+        0.09573911875486374,
+        0.003956322558224201,
+        0.6871423721313477,
+        0.0034691879991441965,
+        0.003357082372531295,
+        0.02112785167992115,
+        0.0010289333295077085,
+        0.0024171429686248302,
+        0.11282859742641449,
+        0.06893342733383179
+      ]
+    },
+    {
+      "trial_id": "positive_05",
+      "kind": "positive",
+      "expected": 4,
+      "native_id": "fresh15:positive:positive_05:trim",
+      "native_index": 4533,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/positive_05/a000001/recording.wav",
+      "wav_sha256": "ec7753d5f13fbd61856e8147078b570009f4d045570beca60dfca258d3cd26c4",
+      "trimmed_pcm_sha256": "19746a0261686692d1dceb2caead1e9e7316d297e74d60cdfe17492ad95a37de",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -45.849297603320665,
+        "threshold_dbfs": -35.849297603320665,
+        "peak_frame_rms_dbfs": -16.866689811704344,
+        "active_frames": 36,
+        "start_sample": 18560,
+        "end_sample": 34240,
+        "status": "trimmed"
+      },
+      "native_probabilities": [
+        0.12991963326931,
+        0.002485375152900815,
+        0.3206554055213928,
+        0.3206554055213928,
+        0.04102727398276329,
+        0.004091367125511169,
+        0.012955991551280022,
+        0.017691653221845627,
+        0.007870350033044815,
+        0.14264747500419617
+      ],
+      "python_probabilities": [
+        0.1299196183681488,
+        0.0024853700306266546,
+        0.32065549492836,
+        0.32065549492836,
+        0.0410272479057312,
+        0.004091360606253147,
+        0.012955974787473679,
+        0.017691634595394135,
+        0.007870337925851345,
+        0.14264747500419617
+      ]
+    },
+    {
+      "trial_id": "positive_04",
+      "kind": "positive",
+      "expected": 3,
+      "native_id": "fresh15:positive:positive_04:trim",
+      "native_index": 4535,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/positive_04/a000001/recording.wav",
+      "wav_sha256": "22154fcaf1424f10bbc149ed653dc97a0ee0b973311d042e18ef09a5b755b3ad",
+      "trimmed_pcm_sha256": "8b7f57ccc4232a6f30a245fc464a69e6605b80dfbe6a8d8abc5e17f1688f634c",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -46.03406623420783,
+        "threshold_dbfs": -36.03406623420783,
+        "peak_frame_rms_dbfs": -13.638472594091816,
+        "active_frames": 34,
+        "start_sample": 24320,
+        "end_sample": 39360,
+        "status": "trimmed"
+      },
+      "native_probabilities": [
+        0.0004989165463484824,
+        0.0012711280724033713,
+        0.21780960261821747,
+        0.701097846031189,
+        2.1746396669186652e-05,
+        0.0003949004167225212,
+        9.266961569665e-05,
+        0.0007599773816764355,
+        0.00019582416280172765,
+        0.07785731554031372
+      ],
+      "python_probabilities": [
+        0.0005004691192880273,
+        0.0012745397398248315,
+        0.2178821861743927,
+        0.7009574770927429,
+        2.1845276933163404e-05,
+        0.00039617143920622766,
+        8.878136577550322e-05,
+        0.0007621958502568305,
+        0.0001965174888027832,
+        0.07791981846094131
+      ]
+    },
+    {
+      "trial_id": "unknown_03",
+      "kind": "unknown",
+      "expected": 9,
+      "native_id": "fresh15:unknown:unknown_03:trim",
+      "native_index": 4537,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/unknown_03/a000001/recording.wav",
+      "wav_sha256": "4ffe46a44e7b7053de85f52e7263eef1fcea5b80ed00949b44231e0030f0d936",
+      "trimmed_pcm_sha256": "0799a3ef8f17b38956f3209fc2c9bbe6e5e5e25fb1fb24d0fa86fad09874a166",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -46.10060601234252,
+        "threshold_dbfs": -36.10060601234252,
+        "peak_frame_rms_dbfs": -13.512422884406837,
+        "active_frames": 36,
+        "start_sample": 21120,
+        "end_sample": 38400,
+        "status": "trimmed"
+      },
+      "native_probabilities": [
+        0.026822088286280632,
+        0.022989846765995026,
+        0.39832010865211487,
+        0.003904233453795314,
+        2.0448642317205667e-06,
+        0.05367809534072876,
+        0.0001788152294466272,
+        0.12533089518547058,
+        5.157080977369333e-06,
+        0.3687686622142792
+      ],
+      "python_probabilities": [
+        0.02682207152247429,
+        0.022989830002188683,
+        0.3983202278614044,
+        0.003904226701706648,
+        2.0448569557629526e-06,
+        0.05367806926369667,
+        0.0001788148656487465,
+        0.1253308802843094,
+        5.157062332727946e-06,
+        0.3687687814235687
+      ]
+    },
+    {
+      "trial_id": "unknown_02",
+      "kind": "unknown",
+      "expected": 9,
+      "native_id": "fresh15:unknown:unknown_02:trim",
+      "native_index": 4539,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/unknown_02/a000001/recording.wav",
+      "wav_sha256": "466473f39f7b8dd4c120ba7e6b4983726b0413ef5dc4e15e8149adfa9ade0e19",
+      "trimmed_pcm_sha256": "642791d4845e6d6840f4347cd8357bd887c81ec615675fd92c098e66686a44b1",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -46.267642194187296,
+        "threshold_dbfs": -34.63560235878116,
+        "peak_frame_rms_dbfs": -9.635602358781165,
+        "active_frames": 31,
+        "start_sample": 14400,
+        "end_sample": 33600,
+        "status": "trimmed"
+      },
+      "native_probabilities": [
+        0.35138559341430664,
+        0.15994417667388916,
+        0.00127129047177732,
+        0.00022251928749028593,
+        0.00011989416816504672,
+        0.01204648520797491,
+        0.0009073026012629271,
+        0.4159395098686218,
+        2.0985577066312544e-05,
+        0.05814218521118164
+      ],
+      "python_probabilities": [
+        0.3547001779079437,
+        0.15227100253105164,
+        0.0012634751619771123,
+        0.0002200875896960497,
+        0.00011838124191854149,
+        0.012047157622873783,
+        0.0009008843917399645,
+        0.4200589656829834,
+        2.0621093426598236e-05,
+        0.05839923769235611
+      ]
+    },
+    {
+      "trial_id": "positive_07",
+      "kind": "positive",
+      "expected": 6,
+      "native_id": "fresh15:positive:positive_07:trim",
+      "native_index": 4541,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/positive_07/a000001/recording.wav",
+      "wav_sha256": "3e2a3f4073ab7d81dcc9aceb9abc3d224a6f6fc6bfff182fdc32c568f2cc0633",
+      "trimmed_pcm_sha256": "91ad2377961ba0dcfe32e4bbd126fb1faafaa633fcf1690f97f09b30b7588796",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -45.449891304667354,
+        "threshold_dbfs": -35.449891304667354,
+        "peak_frame_rms_dbfs": -15.722214829537025,
+        "active_frames": 36,
+        "start_sample": 17920,
+        "end_sample": 32640,
+        "status": "trimmed"
+      },
+      "native_probabilities": [
+        0.014326661825180054,
+        0.005417370703071356,
+        0.026478689163923264,
+        0.01670447550714016,
+        0.0002512068604119122,
+        0.09519816190004349,
+        0.4420863389968872,
+        0.3089599013328552,
+        0.00012913699902128428,
+        0.0904480591416359
+      ],
+      "python_probabilities": [
+        0.014326666481792927,
+        0.00541737349703908,
+        0.026478692889213562,
+        0.016704481095075607,
+        0.0002512070641387254,
+        0.09519817680120468,
+        0.4420863091945648,
+        0.30895987153053284,
+        0.00012913710088469088,
+        0.09044806659221649
+      ]
+    },
+    {
+      "trial_id": "positive_08",
+      "kind": "positive",
+      "expected": 7,
+      "native_id": "fresh15:positive:positive_08:trim",
+      "native_index": 4543,
+      "wav_path": "artifacts/word23_environment_v0_1/fresh_human_session_01/attempts/positive_08/a000001/recording.wav",
+      "wav_sha256": "d14890cfc4e3f67146957c2021a04955f3865bbe4175391257d01d695b891b9a",
+      "trimmed_pcm_sha256": "c6a6dc99bef6bfaea04bcecf340cedfada1381b444743838700bb3b0a49c42f3",
+      "trim_bounds": {
+        "noise_proxy_dbfs": -45.03870969400441,
+        "threshold_dbfs": -35.03870969400441,
+        "peak_frame_rms_dbfs": -13.51710130039528,
+        "active_frames": 32,
+        "start_sample": 24960,
+        "end_sample": 46720,
+        "status": "trimmed"
+      },
+      "native_probabilities": [
+        0.006678624078631401,
+        4.823867493541911e-05,
+        0.0040277945809066296,
+        0.00013262771244626492,
+        2.0453715023904806e-06,
+        0.0011376746697351336,
+        0.0012119108578190207,
+        0.9849891662597656,
+        1.0870452342714998e-06,
+        0.0017708645900711417
+      ],
+      "python_probabilities": [
+        0.006687006447464228,
+        4.5386568672256544e-05,
+        0.003786252811551094,
+        0.00012476065603550524,
+        2.051299816230312e-06,
+        0.0011395115870982409,
+        0.0012138515012338758,
+        0.985226571559906,
+        1.090337150344567e-06,
+        0.0017735641449689865
+      ]
+    }
+  ]
+}

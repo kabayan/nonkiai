@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>声のモデルと辞書を書き込む</title>
+  <link rel="stylesheet" href="model-flasher.css">
+  <script src="model-flasher-core.js" defer></script>
+  <script src="model-flasher-serial.js" defer></script>
+  <script type="module" src="model-flasher-usb.js"></script>
+</head>
+<body>
+<!-- BLE の旧画面（接続・照合・書き込み・再起動）を保存
+<main class="container">
+  <h1>声のモデルと辞書を書き込む</h1>
+  <p class="note">のんきちゃんの声（モデル）と漢字の読みの辞書を Bluetooth で入れ替えます。Chrome / Edge で <code>http://localhost:8095/</code> を開いてください。</p>
+  <p id="support" class="warn" role="alert" hidden></p>
+
+  <fieldset>
+    <legend>1. 端末に接続する</legend>
+    <div class="row">
+      <button id="btnConnect">端末を探して接続</button>
+      <button id="btnDisconnect" disabled>切断</button>
+      <button id="btnReadInfo" disabled>端末の情報を読み直す</button>
+    </div>
+    <p id="connection" role="status">未接続</p>
+    <dl>
+      <dt>端末の名前</dt><dd id="deviceName">―</dd>
+      <dt>モデル領域の大きさ</dt><dd id="partitionSize">―</dd>
+      <dt>辞書領域の大きさ</dt><dd id="dictPartitionSize">―</dd>
+      <dt>声の状態</dt><dd id="voiceReady">―</dd>
+      <dt>声の値（端末）</dt><dd id="deviceVoice">―</dd>
+    </dl>
+    <h2>端末のモデルフラグ</h2>
+    <pre id="deviceFlags">未取得</pre>
+    <details><summary>端末が返した情報</summary><pre id="infoView">未取得</pre></details>
+  </fieldset>
+
+  <fieldset id="modelChoice">
+    <legend>2. モデルか辞書を選ぶ（どちらか 1 つ）</legend>
+    <h2>model-builder から選ぶ</h2>
+    <div class="row">
+      <button id="btnRefreshRuns">一覧を更新</button>
+      <label for="runs">声・モデル・日時・大きさ</label>
+      <select id="runs"><option value="">一覧を取得してください</option></select>
+      <button id="btnLoadRun" disabled>選んだ重みを取得</button>
+    </div>
+    <p id="catalogState" class="note" role="status"></p>
+    <h2>手元のファイルから選ぶ</h2>
+    <label for="modelFile">model-builder の bundle（.zip）</label>
+    <input id="modelFile" type="file" accept=".zip">
+    <p id="selectionState" role="status">モデルは選ばれていません</p>
+    <pre id="modelFlags">未取得</pre>
+    <p class="note">声の値（bundle の f0Shape と voice.vnoise。モデルといっしょに端末へ記録します）</p>
+    <pre id="voiceValues">未取得</pre>
+    <h2>辞書を手元のファイルから選ぶ</h2>
+    <label for="dictFile">漢字辞書（k1_dict_*.bin。先頭が K1D1 のもの）</label>
+    <input id="dictFile" type="file" accept=".bin">
+    <p id="dictState" role="status">辞書は選ばれていません</p>
+    <p id="compatibility" role="status"></p>
+  </fieldset>
+
+  <fieldset>
+    <legend>3. 書き込む</legend>
+    <p class="note">書き込む前に端末の中身と照合し、同じなら書きません。書き込み中は発話と聞き取りを止めます。画面を開いたまま端末の近くでお待ちください。中止した場合は最初から書き直せます。辞書の書き込みが完了しないまま終わると、端末は電源を入れ直すまで発話を止めたままです。もう一度書くか、USB を一度抜いて差し直し、端末の電源を入れ直してください。</p>
+    <div class="row">
+      <button id="btnCheck" disabled>端末の中身と照合</button>
+      <button id="btnWrite" disabled>このモデルを書き込む</button>
+      <button id="btnAbort" disabled>中止</button>
+    </div>
+    <p id="phase" role="status">準備待ち</p>
+    <progress id="progress" max="100" value="0" aria-label="端末に書き終えた割合"></progress>
+    <p id="progressText">0 B / 0 B（0%）</p>
+    <p id="rate" class="note">速さ・残り時間は書き込み開始後に表示します</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>4. 結果と電源の入れ直し</legend>
+    <p id="result" role="status">まだ書き込んでいません</p>
+    <pre id="hashResult">照合待ち</pre>
+    <button id="btnReboot" disabled>照合済みのモデル（辞書）で再起動</button>
+    <p class="note">書き込み成功後は USB を一度抜いて差し直し、端末の電源を入れ直してください。差し直したら「端末を探して接続」で接続し直します。USB を抜けないときは、代わりに端末とブラウザの SHA-256 が一致した後で上のボタンを押せます。ボタンで再起動した後は自動で再接続し、端末の情報を読み直します。</p>
+  </fieldset>
+
+  <h2>ログ</h2>
+  <button id="btnClearLog">ログを消す</button>
+  <div id="log" role="log" aria-live="polite" aria-relevant="additions"></div>
+</main>
+-->
+<main class="container">
+<h1>USB でアプリ・モデル・辞書を書き込む</h1>
+<p>Chrome / Edge で http://localhost:8095/ を開き、端末を USB で接続してください。</p>
+<p id="support" role="alert" hidden></p>
+<fieldset><legend>1. 端末に USB で接続</legend>
+<button id="btnConnect">端末に USB で接続</button><button id="btnDisconnect" disabled>切断</button>
+<p id="connection">未接続</p><pre id="deviceInfo">未取得</pre></fieldset>
+<fieldset><legend>2. 書く対象を選ぶ（複数可）</legend>
+<fieldset id="appTarget"><legend>アプリ</legend>
+<label><input id="useapp" type="checkbox">アプリを書く</label>
+<div><button id="btnApp">中継サーバのアプリを取得（本体のビルド）</button></div>
+<label for="appFile">手元のアプリ（.bin）を選択</label>
+<input id="appFile" type="file" accept=".bin"><p id="appState">未選択</p></fieldset>
+<fieldset id="modelTarget"><legend>モデル</legend>
+<label><input id="usemodel" type="checkbox">モデルを書く</label>
+<div><button id="btnRefreshRuns">model-builder の一覧を取得</button></div>
+<select id="runs"><option value="">モデルを選んでください</option></select><button id="btnLoadRun">選んだ重みを取得</button>
+<p id="catalogState"></p>
+<label for="modelFile">手元のモデル bundle（.zip）を選択</label>
+<input id="modelFile" type="file" accept=".zip"><p id="modelState">未選択</p></fieldset>
+<fieldset id="dictTarget"><legend>辞書</legend>
+<label><input id="usedict" type="checkbox">辞書を書く</label>
+<div><button id="btnDict">中継サーバの辞書を取得</button></div>
+<label for="dictFile">手元の辞書（.bin）を選択</label>
+<input id="dictFile" type="file" accept=".bin"><p id="dictState">未選択</p></fieldset>
+<pre id="compatibility"></pre></fieldset>
+<fieldset><legend>3. 照合して書き込む</legend>
+<button id="btnCheck" disabled>照合</button><button id="btnWrite" disabled>書き込む</button>
+<p id="phase">準備待ち</p><pre id="hashResult">照合待ち</pre>
+<progress id="progress" max="100" value="0"></progress><p id="progressText"></p><p id="rate"></p>
+<p id="result" role="status">まだ書き込んでいません</p>
+<p>同じ中身は書きません。完了後は端末を自動でリセットします。起動しない場合は本体のリセットボタンを押してください。</p></fieldset>
+<pre id="log"></pre></main>
+</body>
+</html>

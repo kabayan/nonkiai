@@ -1,0 +1,9 @@
+dependencies:
+  idf:
+    version: ">=5.4"
+  # DLS-002: BMI270 / BMM150 ドライバを自前で書かないために M5Unified を IDF
+  # component として使う。Arduino 非依存 (register_component 済み)。
+  m5stack/m5unified: "^0.2.22"
+  joltwallet/littlefs: "^1.14.8"
+  # stt32 の周波数特性の補正（FFT）が使う。stt32 の dependencies.lock と同じ版
+  espressif/esp-dsp: "1.8.0"

@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>のんきちゃんの設定（モード・発話）</title><style>
+  :root {
+    color-scheme: light;
+    --cream: #fffaf3;
+    --card: rgba(255,255,255,.88);
+    --pink: #ef7697;
+    --pink-dark: #c45174;
+    --pink-pale: #ffe5eb;
+    --yellow: #fff1bc;
+    --brown: #4c3540;
+    --muted: #8a707a;
+    --line: #f0d6da;
+    --ok: #4e9272;
+    --error: #bd5360;
+    --shadow: 0 16px 36px rgba(176, 92, 116, .13);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--brown);
+    background:
+      radial-gradient(circle at 9% 12%, rgba(255, 223, 164, .46) 0 36px, transparent 37px),
+      radial-gradient(circle at 91% 18%, rgba(246, 192, 207, .45) 0 52px, transparent 53px),
+      var(--cream);
+    font: 15px/1.6 ui-rounded, "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  }
+  button, input, select { font: inherit; }
+  button { cursor: pointer; }
+  button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity: .52; }
+  .page { width: min(100% - 28px, 980px); margin: 0 auto; padding: 28px 0 42px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark { width: 50px; height: 50px; border-radius: 18px; background: var(--pink-pale); padding: 8px; object-fit: contain; box-shadow: 0 8px 18px rgba(196,81,116,.12); }
+  .brand h1 { margin: 0; font-size: clamp(22px, 5vw, 32px); letter-spacing: .04em; line-height: 1.2; }
+  .brand p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+  .connect-box { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; justify-content: flex-end; }
+  .connection-state { font-size: 13px; color: var(--muted); }
+  .connection-state.ok { color: var(--ok); font-weight: 700; }
+  .connection-state.error { color: var(--error); font-weight: 700; }
+  .btn { border: 0; border-radius: 999px; padding: 10px 18px; color: var(--brown); background: #f8e9e2; box-shadow: 0 5px 12px rgba(140,83,96,.10); transition: transform .15s, box-shadow .15s; }
+  .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 16px rgba(140,83,96,.15); }
+  .btn.primary { background: var(--pink); color: #fff; font-weight: 700; }
+  .btn.soft { background: var(--yellow); }
+  .btn.small { padding: 7px 13px; font-size: 13px; }
+
+.card { border:1px solid var(--line); border-radius:27px; background:var(--card); box-shadow:var(--shadow); padding:24px; margin:18px 0; }
+h2 { margin:0 0 10px; font-size:20px; } h3 { font-size:17px; }
+a { color:var(--pink-dark); } nav { display:flex; gap:16px; flex-wrap:wrap; }
+input, select { border:1px solid var(--line); border-radius:12px; padding:9px; background:white; color:var(--brown); }
+input[type=text] { width:100%; min-width:0; } .muted, small { color:var(--muted); }
+.table-wrap { overflow-x:auto; } table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding:10px 5px; border-bottom:1px solid var(--line); } th { font-size:13px; } td:first-child { width:28%; } td:nth-child(2) { min-width:180px; } small { display:block; } .error { color:var(--error); }
+@media(max-width:640px) { .topbar { align-items:flex-start; flex-direction:column; } .card { padding:16px; } }
+</style></head>
+<body><main class="page">
+<header class="topbar"><div class="brand"><h1>モード・発話の設定</h1></div><div class="connect-box">
+<button class="btn primary" id="connectButton">つなぐ</button><button class="btn" id="disconnectButton" disabled>切断</button></div></header>
+<nav aria-label="ほかの画面"><a href="index.html">のんきちゃんの画面へ戻る</a><a href="model-flasher.html">ファームを書き込む</a><a href="record.html">IMU 収録</a></nav>
+<p id="connectionState" role="status" aria-live="polite">未接続</p>
+<section class="card"><h2>認識モード</h2><label for="listenModeInput">モード</label>
+<select id="listenModeInput" disabled><option value="">確認中</option><option value="1">おもちゃ</option><option value="0">ぬいぐるみ</option></select>
+<p id="listenModeState" class="muted">本体に接続してください。</p></section>
+<section class="card"><h2>動作ごとの発話の設定</h2>
+<p>各欄は UTF-8 で63バイトまで。空欄は「話さない」です。変更した文を本体に保存します。</p>
+<p class="muted">1回たたく（tap1）は名前の自己紹介、2回たたく（tap2）は「トリビア」で豆知識を話します。試聴ボタンは欄の文をそのまま読み上げます。</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">動作</th><th scope="col">発話する文</th><th scope="col">試聴</th></tr></thead><tbody id="motionRows"></tbody></table></div>
+<h3>おもちゃモードの返事</h3><p class="muted">標準の文のままなら毎回おまかせで選びます。空欄は返事をせずに IR を送ります。どちらのモードでも先に設定できます。</p>
+<button id="resetToyButton" class="btn soft" disabled>おもちゃの返事を標準の文に戻す</button>
+<div class="table-wrap"><table><thead><tr><th scope="col">動作</th><th scope="col">返事の文</th><th scope="col">試聴</th></tr></thead><tbody id="toyRows"></tbody></table></div>
+<p><button id="saveButton" class="btn primary" disabled>変更した発話を本体に保存</button></p><p id="configState" role="status" aria-live="polite">本体に接続してください。</p></section>
+<section class="card"><h2>好きな文を試しに話す</h2><label for="sayInput">話す文（UTF-8 で126バイトまで）</label>
+<input type="text" id="sayInput" disabled><small id="sayCount"></small><p><button class="btn soft" id="sayButton" disabled>話す</button></p><p id="sayState" role="status" aria-live="polite"></p></section>
+</main><script>
+(() => {
+'use strict';
+const SERVICE_UUID = 'a1b20000-5d3f-4e8a-9c21-7f6e5d4c3b2a';
+const CTRL_UUID = 'a1b20002-5d3f-4e8a-9c21-7f6e5d4c3b2a';
+const STATUS_UUID = 'a1b20003-5d3f-4e8a-9c21-7f6e5d4c3b2a';
+const CTRL_VOICE_CFG_SET=0x10, CTRL_VOICE_CFG_SAVE=0x11, CTRL_VOICE_CFG_LOAD=0x12, CTRL_VOICE_SAY=0x13;
+const CTRL_LISTEN_MODE=0x25, STATUS_LISTEN_MODE=0x9c, STATUS_VOICE_CFG_ITEM=0x90, STATUS_NAME_RESULT=0x93, NAME_OP_CONFIG_SAVE=4;
+const LISTEN_MODE_TEXT = [
+  'ぬいぐるみ: 話しかけに返事をします。IRは送りません。',
+  'おもちゃ: 前進・後退・右・左を聞き取ると、返事を話し終えたあとに本フレームを前進・後退は5回、右・左は4回送ります。',
+];
+const TOY_KEYS=['toy_forward','toy_back','toy_right','toy_left'];
+const TOY_DEFAULTS=['まえにすすんで！','うしろにさがって！','みぎにまわって！','ひだりにまわって！'];
+const NAMES={tap1:'1回たたく (tap1)',tap2:'2回たたく (tap2)',tap3:'3回たたく (tap3)',nod:'うなずく (nod)',rock:'寝かしつけ (rock)',spin180:'180度回転 (spin180)',tilt_lr:'首かしげ (tilt_lr)',turn_lr:'見回す (turn_lr)',calib_start:'静止待機開始 (calib_start)',calib_complete:'基準点設定成功 (calib_complete)',calib_failed:'基準点設定失敗 (calib_failed)',wakeup:'正立復帰・起床 (wakeup)',toy_forward:'おもちゃ・前進',toy_back:'おもちゃ・後退',toy_right:'おもちゃ・右',toy_left:'おもちゃ・左'};
+const $=id=>document.getElementById(id), enc=new TextEncoder(), dec=new TextDecoder();
+let device=null, ctrl=null, status=null, connectionEpoch=0, connecting=false, saving=false, sending=false, modeSending=false, listenMode=null;
+let ctrlChain=Promise.resolve(), totalItems=0;
+const configs=new Map(), received=new Map(), waiters=new Map();
+const connected=()=>!!ctrl && !!device?.gatt?.connected;
+const current=epoch=>epoch===connectionEpoch && connected();
+const valid=(text,max)=>!text.includes('\0') && enc.encode(text).length<=max;
+const loaded=()=>totalItems>0 && received.size===totalItems;
+function count(node,text,max) { const left=max-enc.encode(text).length; node.textContent=`残り${left}バイト${text.includes('\0')?'（使用できない文字があります）':''}`; node.className=valid(text,max)?'':'error'; }
+function updateInputs() {
+  const active=connected() && !connecting && !saving;
+  $('connectButton').disabled=connected() || connecting;
+  $('disconnectButton').disabled=!device;
+  $('listenModeInput').disabled=!active || modeSending || listenMode===null;
+  $('saveButton').disabled=!active || !loaded() || ![...configs.values()].every(c=>valid(c.input.value,63)) || ![...configs.values()].some(c=>c.input.value!==c.saved);
+  $('resetToyButton').disabled=!active || !TOY_KEYS.every(key=>configs.has(key));
+  for(const c of configs.values()) { c.input.disabled=!active; count(c.count,c.input.value,63); c.play.disabled=!active || sending || !c.input.value.trim() || !valid(c.input.value,63); }
+  $('sayInput').disabled=!active; count($('sayCount'),$('sayInput').value,126);
+  $('sayButton').disabled=!active || sending || !$('sayInput').value.trim() || !valid($('sayInput').value,126);
+}
+function writeCtrl(bytes,epoch=connectionEpoch) {
+  const characteristic=ctrl;
+  const result=ctrlChain.then(()=>{ if(!current(epoch) || ctrl!==characteristic) throw Error('本体に接続してください'); return characteristic.writeValueWithoutResponse(bytes); });
+  ctrlChain=result.catch(()=>{}); return result;
+}
+function waitForResult(operation,timeoutMs=5000) {
+  return new Promise(resolve=>{
+    const waiter={resolve:value=>{clearTimeout(waiter.timer);resolve(value);},timer:null};
+    waiter.timer=setTimeout(()=>{if(waiters.get(operation)===waiter) waiters.delete(operation);waiter.resolve({timeout:true});},timeoutMs);
+    waiters.set(operation,waiter);
+  });
+}
+function cancelWaiters() { for(const waiter of waiters.values()) waiter.resolve({timeout:true}); waiters.clear(); }
+function resetState() {
+  ++connectionEpoch; cancelWaiters(); ctrl=null; status=null; device=null; connecting=false; saving=false; sending=false; modeSending=false; listenMode=null;
+  ctrlChain=Promise.resolve(); configs.clear(); received.clear(); totalItems=0;
+  $('motionRows').replaceChildren(); $('toyRows').replaceChildren(); $('listenModeInput').value='';
+  $('listenModeState').textContent='本体に接続してください。'; $('configState').textContent='本体に接続してください。';
+  $('sayInput').value=''; $('sayState').textContent=''; $('connectionState').textContent='未接続'; updateInputs();
+}
+function disconnect() { const old=device; resetState(); if(old?.gatt?.connected) old.gatt.disconnect(); }
+function addConfig(key,text) {
+  const row=document.createElement('tr'), label=document.createElement('td'), field=document.createElement('td'), action=document.createElement('td');
+  const input=document.createElement('input'), counter=document.createElement('small'), play=document.createElement('button');
+  label.textContent=NAMES[key] || key; input.type='text'; input.value=text; input.setAttribute('aria-label',NAMES[key] || key);
+  play.textContent='試聴'; play.className='btn small';
+  input.addEventListener('input',updateInputs); play.addEventListener('click',()=>sayText(input.value));
+  field.append(input,counter); action.append(play); row.append(label,field,action);
+  $(TOY_KEYS.includes(key)?'toyRows':'motionRows').append(row);
+  configs.set(key,{input,count:counter,play,saved:text});
+}
+function onStatus(event) {
+  const view=event.target.value; if(!view || !view.byteLength) return;
+  const op=view.getUint8(0);
+  if(op===STATUS_VOICE_CFG_ITEM && view.byteLength>=5 && !saving) {
+    const idx=view.getUint8(1), total=view.getUint8(2);
+    const bytes=new Uint8Array(view.buffer,view.byteOffset+3,view.byteLength-3), first=bytes.indexOf(0), last=bytes.indexOf(0,first+1);
+    if(!total || idx>=total || first<=0 || last<0 || (totalItems && totalItems!==total)) return;
+    const key=dec.decode(bytes.subarray(0,first)), text=dec.decode(bytes.subarray(first+1,last));
+    if(!/^[a-z0-9_]{1,15}$/.test(key) || (received.has(idx) && received.get(idx)!==key) || (configs.has(key) && !received.has(idx))) return;
+    totalItems=total; received.set(idx,key);
+    if(!configs.has(key)) addConfig(key,text);
+    $('configState').textContent=loaded()?'本体の発話設定を読み込みました。':`設定を読み込み中…（${received.size}/${total}）`;
+    updateInputs();
+  } else if(op===STATUS_LISTEN_MODE && view.byteLength===2 && view.getUint8(1)<2) {
+    listenMode=view.getUint8(1); $('listenModeInput').value=String(listenMode); $('listenModeState').textContent=LISTEN_MODE_TEXT[listenMode]; updateInputs();
+  } else if(op===STATUS_NAME_RESULT && view.byteLength>=6) {
+    const operation=view.getUint8(1), waiter=waiters.get(operation);
+    if(waiter) { waiters.delete(operation); waiter.resolve({error:view.getUint32(2,true)}); }
+  }
+}
+async function connect() {
+  if(connecting || connected()) return;
+  if(!navigator.bluetooth || !window.isSecureContext) { $('connectionState').textContent='Web Bluetooth 対応ブラウザで HTTPS または localhost から開いてください。'; return; }
+  disconnect(); const epoch=connectionEpoch; connecting=true; updateInputs(); $('connectionState').textContent='接続中…';
+  let selectedDevice;
+  try {
+    selectedDevice=await navigator.bluetooth.requestDevice({filters:[{services:[SERVICE_UUID]}]});
+    if(epoch!==connectionEpoch) return;
+    device=selectedDevice;
+    device.addEventListener('gattserverdisconnected',()=>{if(epoch===connectionEpoch && device===selectedDevice) resetState();});
+    const server=await device.gatt.connect();
+    if(epoch!==connectionEpoch) { if(selectedDevice.gatt.connected) selectedDevice.gatt.disconnect(); return; }
+    const service=await server.getPrimaryService(SERVICE_UUID);
+    if(epoch!==connectionEpoch) return;
+    const activeCtrl=await service.getCharacteristic(CTRL_UUID);
+    if(epoch!==connectionEpoch) return;
+    const activeStatus=await service.getCharacteristic(STATUS_UUID);
+    if(epoch!==connectionEpoch) return;
+    ctrl=activeCtrl; status=activeStatus;
+    status.addEventListener('characteristicvaluechanged',event=>{if(current(epoch) && status===activeStatus) onStatus(event);});
+    await status.startNotifications(); if(!current(epoch)) return;
+    await writeCtrl(new Uint8Array([CTRL_VOICE_CFG_LOAD]),epoch); if(!current(epoch)) return;
+    connecting=false; $('connectionState').textContent='接続済み';
+    if(!totalItems) $('configState').textContent='設定を読み込み中…'; updateInputs();
+  } catch(error) { if(epoch===connectionEpoch) { disconnect(); $('connectionState').textContent=`接続できませんでした: ${error.message}`; } }
+}
+async function saveConfigs() {
+  if(!connected() || connecting || saving || !loaded() || ![...configs.values()].every(c=>valid(c.input.value,63))) return;
+  const changes=[...configs].filter(([,c])=>c.input.value!==c.saved).map(([key,c])=>({key,text:c.input.value}));
+  if(!changes.length) return;
+  const epoch=connectionEpoch; saving=true; updateInputs(); $('configState').textContent='保存中…';
+  try {
+    for(const {key,text} of changes) await writeCtrl(new Uint8Array([CTRL_VOICE_CFG_SET,...enc.encode(key),0,...enc.encode(text),0]),epoch);
+    const waiter=waitForResult(NAME_OP_CONFIG_SAVE);
+    await writeCtrl(new Uint8Array([CTRL_VOICE_CFG_SAVE]),epoch);
+    const result=await waiter; if(!current(epoch)) return;
+    if(result.timeout) throw Error('本体から保存結果がありません');
+    if(result.error!==0) throw Error(`保存を確認できません (${result.error})`);
+    for(const {key,text} of changes) configs.get(key).saved=text;
+    $('configState').textContent='発話の設定を本体に保存しました。';
+  } catch(error) { if(current(epoch)) $('configState').textContent=`保存できませんでした: ${error.message}。もう一度保存してください。`; }
+  finally { if(epoch===connectionEpoch) { cancelWaiters(); saving=false; updateInputs(); } }
+}
+async function sayText(text=$('sayInput').value) {
+  if(!connected() || connecting || saving || sending || !text.trim() || !valid(text,126)) return;
+  const epoch=connectionEpoch; sending=true; updateInputs();
+  try { await writeCtrl(new Uint8Array([CTRL_VOICE_SAY,...enc.encode(text),0]),epoch); if(current(epoch)) $('sayState').textContent='発話を送りました。'; }
+  catch(error) { if(current(epoch)) $('sayState').textContent=`送信できませんでした: ${error.message}`; }
+  finally { if(epoch===connectionEpoch) { sending=false; updateInputs(); } }
+}
+async function setListenMode(mode) {
+  if(!connected() || connecting || saving || modeSending || ![0,1].includes(mode)) return;
+  const epoch=connectionEpoch; modeSending=true; updateInputs(); $('listenModeState').textContent='保存中…';
+  try { await writeCtrl(new Uint8Array([CTRL_LISTEN_MODE,mode]),epoch); }
+  catch(error) { if(current(epoch)) { $('listenModeInput').value=String(listenMode); $('listenModeState').textContent=`保存できませんでした: ${error.message}`; } }
+  finally { if(epoch===connectionEpoch) { modeSending=false; updateInputs(); } }
+}
+$('connectButton').addEventListener('click',connect); $('disconnectButton').addEventListener('click',disconnect);
+$('listenModeInput').addEventListener('change',e=>setListenMode(Number(e.target.value)));
+$('saveButton').addEventListener('click',saveConfigs); $('sayInput').addEventListener('input',updateInputs);
+$('sayButton').addEventListener('click',()=>sayText());
+$('resetToyButton').addEventListener('click',()=>{TOY_KEYS.forEach((key,i)=>{const c=configs.get(key);if(c)c.input.value=TOY_DEFAULTS[i];});updateInputs();});
+resetState();
+})();
+</script></body></html>

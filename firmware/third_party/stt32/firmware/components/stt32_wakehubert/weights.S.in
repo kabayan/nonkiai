@@ -1,0 +1,7 @@
+    .section .rodata
+    .balign 16
+    .global stt32_wakehubert_weights
+stt32_wakehubert_weights:
+    .incbin "@WEIGHTS_BIN@"
+    .global stt32_wakehubert_weights_end
+stt32_wakehubert_weights_end:

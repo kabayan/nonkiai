@@ -1,0 +1,125 @@
+{
+  "upstream": "stt32",
+  "commit": "e1624dec702e5cd26a09fe2b96510c5a6d6a90e3",
+  "model_npz_sha256": "48bb5ff9af9ade3eac7895265a561995e7a5053ba54bf4fc79bcfc8b4cec8843",
+  "files": [
+    {
+      "local": "upstream/word23_accel_feature_f2.cpp",
+      "source": "firmware/components/word23_accel/word23_accel_feature_f2.cpp",
+      "sha256": "5ffcd1e8186485668f5da5c5eab16860dc699f08c81fdfe43d9f85467cb4554e",
+      "tracked": true
+    },
+    {
+      "local": "upstream/word23_dot_s8_s3.S",
+      "source": "firmware/components/word23_accel/word23_dot_s8_s3.S",
+      "sha256": "7ac1ef106408ca3cac4ca8c55d3dfff4ec1e8f2f58b097d6e3fab792b26cd386",
+      "tracked": true
+    },
+    {
+      "local": "upstream/word23_accel_m2t_model.cpp",
+      "source": "firmware/components/word23_accel/word23_accel_m2t_model.cpp",
+      "sha256": "c11e8080b302074689b1a5f9bc9e238c941d45a13f5912bf5ac3ffc048767f04",
+      "tracked": true
+    },
+    {
+      "local": "upstream/word23_accel_feature_f2.h",
+      "source": "firmware/components/word23_accel/word23_accel_feature_f2.h",
+      "sha256": "b1a652c482b386346dcf0436530dd02c62a19aed39d80b0f0dfb8905a83fc360",
+      "tracked": true
+    },
+    {
+      "local": "upstream/word23_accel_feature_f2_internal.h",
+      "source": "firmware/components/word23_accel/word23_accel_feature_f2_internal.h",
+      "sha256": "41a8ccad56a05253b64a5e9101438b3865b0ddbbb8029a90ceed43da314dae33",
+      "tracked": true
+    },
+    {
+      "local": "upstream/word23_accel_internal.h",
+      "source": "firmware/components/word23_accel/word23_accel_internal.h",
+      "sha256": "31b5f36d656621562cb66a4e2c0175e1dd21a74dda5fd073eeeb4d1cee5c7e10",
+      "tracked": true
+    },
+    {
+      "local": "upstream/word23_accel_m2_detail.h",
+      "source": "firmware/components/word23_accel/word23_accel_m2_detail.h",
+      "sha256": "debcb257d1d7c92149441bfe6ac8e8459b6cd2cd635b6a7121902efc71c5ccb6",
+      "tracked": true
+    },
+    {
+      "local": "upstream/word23_accel_m2_model.h",
+      "source": "firmware/components/word23_accel/word23_accel_m2_model.h",
+      "sha256": "f15af002164fe959de4a983ce56e7d4abaacfbc59743140cfc47445c71e4659d",
+      "tracked": true
+    },
+    {
+      "local": "upstream/word23_accel_m2t_model.h",
+      "source": "firmware/components/word23_accel/word23_accel_m2t_model.h",
+      "sha256": "c1f01d1ba9b5c1d930b85fdaf38e4762e1c5035aaffa0ea31f9a2351ba0dada8",
+      "tracked": true
+    },
+    {
+      "local": "upstream/word23_accel_model.h",
+      "source": "firmware/components/word23_accel/word23_accel_model.h",
+      "sha256": "bb46b0f4691b6ff4104fb459a53f3a3211faca489584687b942164799bd12a26",
+      "tracked": true
+    },
+    {
+      "local": "upstream/log_mel_feature.h",
+      "source": "common/include/log_mel_feature.h",
+      "sha256": "caca96c1dc4339b4821f18f1ce5d6c921fff9e86dbd00351609759b8acff46a0",
+      "tracked": true
+    },
+    {
+      "local": "upstream/sts_int8_model.h",
+      "source": "firmware/include/sts_int8_model.h",
+      "sha256": "a815ed9201c6581f323ad24380477a949781f8a69e2c09dbd6d0722500c03cb5",
+      "tracked": true
+    },
+    {
+      "local": "upstream/energy_trim.h",
+      "source": "tools/word23_v041/native/energy_trim.h",
+      "sha256": "63ef03ede87ebc6e79eab1a38bc15fd6196a3f9c2e5e509cf58baa6fb31d0ea6",
+      "tracked": true
+    },
+    {
+      "local": "generated/sts_int8_model_config.h",
+      "source": "artifacts/word23_v0_4_accel_20261001_01/projects/integration_stream_ring64/main/generated/sts_int8_model_config.h",
+      "sha256": "acd816feb8ca5160854270fc365758ebfdf7e2187811c13aa8874ef4579ce54d",
+      "tracked": false
+    },
+    {
+      "local": "generated/sts_int8_model_data.h",
+      "source": "artifacts/word23_v0_4_accel_20261001_01/projects/integration_stream_ring64/main/generated/sts_int8_model_data.h",
+      "sha256": "5c73b42e279f0f82bbdd9a0621039f4bf0e7eb07217c0b45a4697fefa04e3672",
+      "tracked": false
+    },
+    {
+      "local": "generated/sts_feature_norm.h",
+      "source": "artifacts/word23_v0_4_accel_20261001_01/projects/integration_stream_ring64/main/generated/sts_feature_norm.h",
+      "sha256": "36a5c4d50fe6702fff5fbfe82d1a3fd22c420242c27c2a1bc382251bc64b6361",
+      "tracked": false
+    },
+    {
+      "local": "generated/word23_runtime_config.h",
+      "source": "artifacts/word23_v0_4_accel_20261001_01/projects/integration_stream_ring64/main/generated/word23_runtime_config.h",
+      "sha256": "b68bfc0fe1854fb8bc645c3ba6dbd543a946dc2ccced72af25560af7cfba4449",
+      "tracked": false
+    }
+  ],
+  "class_names": [
+    "前進",
+    "後退",
+    "右",
+    "左",
+    "名前",
+    "天気",
+    "なんじ",
+    "元気",
+    "ほめる",
+    "不明"
+  ],
+  "native_golden_fixture": {
+    "local": "tests/fresh15_native_golden.json",
+    "sha256": "68ad2e404f634e3e838359d2c56f770b1d49669063f1825b2641b4f7114f9d2f"
+  }
+}

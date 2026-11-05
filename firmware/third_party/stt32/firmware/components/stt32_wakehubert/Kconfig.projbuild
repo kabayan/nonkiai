@@ -1,0 +1,39 @@
+menu "stt32 wakehubert"
+    config STT32_WAKEHUBERT_EQ
+        bool "Frequency-response correction (S-A FIR, DLS-1069) before trim/mel"
+        default n
+        help
+            Compile in the 511-tap linear-phase FIR (h_F*G_F, eq_fir_coeffs.h) that is applied to the
+            whole window before trim_bounds. The corrected window lives in the A/B work block
+            (96000 B, +2.8 KB). Enabled at run time from init; stt32_wakehubert_set_eq() can switch it.
+
+    choice STT32_WAKEHUBERT_EQ_IMPL
+        prompt "Correction implementation"
+        depends on STT32_WAKEHUBERT_EQ
+        default STT32_WAKEHUBERT_EQ_IMPL_FIR
+
+        config STT32_WAKEHUBERT_EQ_IMPL_FIR
+            bool "Direct float FIR (reference, 12.3 M multiply-adds per window)"
+
+        config STT32_WAKEHUBERT_EQ_IMPL_FFT
+            bool "FFT overlap-save (esp-dsp dsps_fft2r_fc32, float)"
+
+        config STT32_WAKEHUBERT_EQ_IMPL_S16
+            bool "int16 FIR (esp-dsp dsps_fird_s16, Q14 coefficients, float fallback near full scale)"
+    endchoice
+
+    config STT32_WAKEHUBERT_EQ_TRIM_FIRST
+        bool "Cut on the uncorrected audio, correct only the cut segment (DLS-1078)"
+        depends on STT32_WAKEHUBERT_EQ
+        default n
+        help
+            Off: correct the whole 3 s window, then trim (DLS-1074). On: trim_bounds runs on the
+            uncorrected window and only [seg_s, seg_e) is corrected ('same' mode, zero outside the
+            segment); the corrected segment goes to mel.
+
+    config STT32_WAKEHUBERT_EQ_FFT_N
+        int "FFT length for the overlap-save correction (1024 or 2048)"
+        depends on STT32_WAKEHUBERT_EQ_IMPL_FFT
+        range 1024 2048
+        default 1024
+endmenu
