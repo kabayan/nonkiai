@@ -9,3 +9,5 @@ nonkiact2 のビルドが読む sanoTTS-jp-2 のファイルだけを写した�
 - 手元の sanoTTS-jp-2 を直接使うときは `idf.py -DSANOTTS_DIR=<絶対パス> ...`
 
 ライセンス: コードは MIT（`LICENSE`）。`csrc/openjtalk/` は Open JTalk の修正 BSD（`csrc/openjtalk/COPYING`）。
+
+`NOTICE.md` は写した元のリポジトリのものをそのまま置いています。中のリンク先（`LICENSE-MODEL.md`・`MODEL_CARD.md`・`docs/` など）は写していません。`NOTICE.md` にある「配布されるモデルの重みは MIT ではない」という注意は、sanoTTS-jp が配布するモデルの重みについてのものです。このファームが使う声のモデル female2 / man2（`firmware/data/sanotts/`）には当たらず、female2 / man2 は MIT（`firmware/data/sanotts/LICENSE`）です。
