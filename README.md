@@ -54,7 +54,7 @@ idf.py -p <PORT> flash
 
 ### ブラウザから書き込む
 
-一度 `idf.py flash` で書いた ATOMS3R の、アプリ・声のモデル・辞書を、PC の Chrome / Edge から USB（Web Serial）で書き換えられます。ほかのサーバーやネットのサービスは要りません（画面が読み込む esptool-js だけはネットから取ります）。
+PC の Chrome / Edge から USB（Web Serial）で ATOMS3R に書き込めます。ほかのサーバーやネットのサービスは要りません（画面が読み込む esptool-js だけはネットから取ります）。初めての ATOMS3R（出荷時のファームなど、別のファームが入っているもの）には「全体を書く」を、一度書いた ATOMS3R にはアプリ・声のモデル・辞書の書き換えを使います。
 
 1. リポジトリのルートで次を実行し、http://localhost:8095/ を開きます。Web Serial が localhost でしか動かないので、手元で画面を配ります。
 
@@ -62,14 +62,27 @@ idf.py -p <PORT> flash
    python3 tools/model_flasher_server.py
    ```
 
-2. 「端末に USB で接続」で ATOMS3R のポートを選びます。
+2. 「端末に USB で接続」で ATOMS3R のポートを選びます。別のファームが入っていると「端末に nonkiact2 のパーティション表がありません」と出ますが、接続はそのまま残ります。下の「全体を書く」に進んでください。
 3. 書くものを選びます。
    - 声のモデル: 「手元のモデル bundle（.zip）を選択」で、`firmware/data/sanotts/female2-v2-excite-bundle.zip` か `man2-v2-excite-bundle.zip` を選びます。素の `.bin` は選べません。bundle に入っているフラグを、画面が端末と照合します。
    - 辞書: `firmware/data/sanotts/k1_dict_4mb.bin`
    - アプリ: `firmware/build/nonkiact2_sampler.bin`（ビルドした場合）
 4. 「照合」で違うものを確かめ、「書き込む」を押します。
 
-書き込みが途中で切れたときは、もう一度つないで「照合」からやり直してください。アプリが起動しなくなったときは、`idf.py -p <PORT> flash` で書き直せます。
+書き込みが途中で切れたときは、もう一度つないで「照合」からやり直してください。アプリが起動しなくなったときは、下の「全体を書く」か `idf.py -p <PORT> flash` で書き直せます。
+
+#### 全体を書く（`idf.py flash` と同じ一式）
+
+先に `firmware/` で `idf.py build` を済ませておきます。画面は `firmware/build/flasher_args.json` が並べるファイルを、`idf.py flash` と同じアドレスに書きます。
+
+1. 接続したあと、「全体を書く（idf.py flash と同じ）」の「中継サーバの一式を取得」を押します。ブートローダー・パーティション表・アプリ・声のモデルと声の値の記録・辞書・音声認識の重み・LittleFS が一覧に出ます。
+2. 「全体を書く」を押し、確認で OK を押します。全部で約 8 MB あるので数分かかります。書いたあとは、領域ごとに端末の中身を照合してから端末をリセットします。
+
+今の中身は保存しないので、元のファームには戻せません。別のファームが入っていた ATOMS3R では、一式に含まれない設定の領域（nvs・phy_init・userdict）も空にします。nonkiact2 を書いたことのある ATOMS3R では、設定（nvs）とユーザー辞書（userdict）は残ります。
+
+#### model-builder から声のモデルを取る（任意）
+
+声のモデルを学習する model-builder を手元で動かしている場合は、「モデル」の欄の「model-builder の URL」に、その URL を入力します。「model-builder の一覧を取得」で一覧が出て、選んだ重みを取得できます。起動時に `--builder <URL>` を付けるか、`tools/model_builder_url.txt` に URL を 1 行書いておくと、それが欄の既定値になります。一度取った重みは `~/.cache/nonkiact2/model-flasher` に保存されます。次からは、同じものを取りに行きません（置き場は `--cache-dir` で変えられます）。model-builder が無ければ欄は空のままにして、手元の bundle（.zip）を選んでください。
 
 ## ライセンス
 
