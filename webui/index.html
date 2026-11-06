@@ -257,7 +257,10 @@
 
   <section id="irTestSection" class="card" hidden>
     <h2>IRテスト送信</h2>
-    <p class="card-intro">外付けIRユニットから、前進・後退は5回、左・右は4回、本フレームを続けて送ります。</p>
+    <label for="irPinInput">送信先</label>
+    <select id="irPinInput" disabled><option value="0" selected>内蔵</option><option value="1">外付け（Grove）</option></select>
+    <p id="irPinState" class="hint" role="status">本体につなぐと送信先を読み込みます。</p>
+    <p id="irTestIntro" class="card-intro">内蔵IR LEDから、前進・後退は5回、左・右は4回、本フレームを続けて送ります。</p>
     <div class="actions">
       <button id="irForwardButton" class="btn soft" type="button" disabled>前進</button>
       <button id="irBackButton" class="btn soft" type="button" disabled>後退</button>
@@ -325,6 +328,14 @@
   const CTRL_IR_TEST = 0x21;
   const CTRL_IR_HOLD = 0x23;
   const STATUS_IR_RESULT = 0x9A;
+  const CTRL_IR_PIN = 0x26;
+  const STATUS_IR_PIN = 0x9D;
+  let irPin = null;
+  let irPinSaving = false;
+  function renderIrPin() {
+    $('irPinInput').value = String(irPin ?? 0);
+    $('irTestIntro').textContent = `${irPin === 1 ? '外付けIRユニット' : '内蔵IR LED'}から、前進・後退は5回、左・右は4回、本フレームを続けて送ります。`;
+  }
   const CTRL_LISTEN_MODE = 0x25;
   const STATUS_LISTEN_MODE = 0x9C;
   let listenMode = null; // 本体が最後に通知した認識モード。保存に失敗したときの戻し先
@@ -568,9 +579,13 @@
     $('volumeInput').disabled = !connected || !ready;
     $('swapNodTiltInput').disabled = !connected || !ready;
     $('listenModeInput').disabled = !connected || !ready;
+    $('irPinInput').disabled = !connected || !ready || irPinSaving;
     pageReady = connected && ready;
     if (!connected) {
       listenMode = null;
+      irPin = null;
+      renderIrPin();
+      $('irPinState').textContent = '本体につなぐと送信先を読み込みます。';
       toyLoaded.clear();
       toySaving = false;
       saySending = false;
@@ -830,6 +845,10 @@
     } else if (op === STATUS_SWAP_NOD_TILT && view.byteLength >= 2) {
       $('swapNodTiltInput').checked = view.getUint8(1) !== 0;
       $('swapNodTiltState').textContent = '本体に保存済みです。';
+    } else if (op === STATUS_IR_PIN && view.byteLength === 2 && view.getUint8(1) <= 1) {
+      irPin = view.getUint8(1);
+      renderIrPin();
+      $('irPinState').textContent = '本体に保存済みです。送信中の変更は次の送信から反映します。';
     } else if (op === STATUS_LISTEN_MODE && view.byteLength === 2 && view.getUint8(1) < LISTEN_MODE_TEXT.length) {
       const mode = listenMode = view.getUint8(1);
       renderMode(true);
@@ -1409,6 +1428,22 @@
     }
   }
 
+  async function setIrPin(pin) {
+    if (!pageReady || !ctrl || irPinSaving || !Number.isInteger(pin) || pin < 0 || pin > 1) return;
+    irPinSaving = true;
+    $('irPinInput').disabled = true;
+    $('irPinState').textContent = '保存中…';
+    try {
+      await writeCtrl(new Uint8Array([CTRL_IR_PIN, pin]));
+    } catch (error) {
+      renderIrPin();
+      $('irPinState').textContent = `保存できませんでした: ${error.message}`;
+    } finally {
+      irPinSaving = false;
+      $('irPinInput').disabled = !pageReady || !ctrl;
+    }
+  }
+
   async function setListenMode(mode) {
     const input = $('listenModeInput');
     input.disabled = true;
@@ -1435,6 +1470,7 @@
   $('nameInput').addEventListener('input', onNameInput);
   $('volumeInput').addEventListener('input', (event) => setVolume(event.target.value));
   $('swapNodTiltInput').addEventListener('change', (event) => setSwapNodTilt(event.target.checked));
+  $('irPinInput').addEventListener('change', (event) => setIrPin(Number(event.target.value)));
   $('listenModeInput').addEventListener('change', (event) => setListenMode(Number(event.target.value)));
   $('sayInput').addEventListener('input', updateVoiceInputs);
   $('sayButton').addEventListener('click', sayText);

@@ -50,6 +50,7 @@ enum {
     NK_CTRL_IR_HOLD          = 0x23, // [0x23][direction:u8][mode:u8 0=NEC repeat/1=full frames][count:u8 1..30][interval_ms:u16 LE 108..500][request:u32 LE], exactly 10B
     NK_CTRL_VOICE_F0K        = 0x24, // [0x24][k:f32 LE] = 5B: 声の高さの倍率 k（0.5〜3.0）を変えて NVS に保存 / [0x24] = 1B: 書き込んだ記録の値に戻す。記録が無い・中心が無いモデルは拒否（DLS-157）
     NK_CTRL_LISTEN_MODE      = 0x25, // [0x25][mode:u8 0=ぬいぐるみ/1=おもちゃ], exactly 2B (即時反映してNVS保存。stt32 DLS-1082)
+    NK_CTRL_IR_PIN           = 0x26, // [0x26][pin:u8 0=GPIO47/1=GPIO2], exactly 2B; apply and save NVS
 };
 
 // STATUS characteristic (notify) のオペコード
@@ -89,6 +90,7 @@ enum {
     NK_STATUS_IR_RESULT      = 0x9A, // [0x9A][direction:u8][request:u32 LE][esp_err_t:u32 LE], 10B
     // 0x9B は聞き取った方向の IR 自動送信の現在設定だった（認識モードに置き換え、stt32 DLS-1082）。再利用しない
     NK_STATUS_LISTEN_MODE    = 0x9C, // [0x9C][mode:u8 0=ぬいぐるみ/1=おもちゃ], 2B（変更後と STATUS 購読開始時に通知）
+    NK_STATUS_IR_PIN         = 0x9D, // [0x9D][pin:u8], 2B; changed and STATUS subscription
 };
 
 enum {

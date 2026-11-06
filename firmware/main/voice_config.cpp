@@ -23,6 +23,7 @@ constexpr char kNvsKeyVolume[] = "vol";
 constexpr char kNvsKeyName[] = "name";
 constexpr char kNvsKeySwapNodTilt[] = "swap_nt";
 constexpr char kNvsKeyDisplayStyle[] = "disp_style";
+constexpr char kNvsKeyIrPin[] = "ir_pin";
 constexpr char kNvsKeyListenMode[] = "listen_mode"; // 旧 "ir_auto" は読まない（stt32 DLS-1082）
 constexpr char kDefaultName[] = "のんきちゃん";
 constexpr char kLegacyDefaultTap1[] = "タップいち";
@@ -91,6 +92,7 @@ static size_t random_message_index(size_t count)
 constexpr uint8_t kDefaultVolume = 100;
 static uint8_t s_volume = kDefaultVolume;
 static bool s_swap_nod_tilt = true;
+static std::atomic<uint8_t> s_ir_pin{0};
 static std::atomic<uint8_t> s_listen_mode{NK_LISTEN_MODE_PLUSH};
 static char s_name[NK_VOICE_NAME_MAX_LEN] = "のんきちゃん";
 
@@ -389,6 +391,11 @@ esp_err_t nk_voice_config_save(void) {
         if (first_error == ESP_OK) first_error = err;
         ESP_LOGW(kTag, "nvs_set_u8 failed for %s: %s", kNvsKeyListenMode, esp_err_to_name(err));
     }
+    err = nvs_set_u8(handle, kNvsKeyIrPin, s_ir_pin.load());
+    if (err != ESP_OK) {
+        if (first_error == ESP_OK) first_error = err;
+        ESP_LOGW(kTag, "nvs_set_u8 failed for %s: %s", kNvsKeyIrPin, esp_err_to_name(err));
+    }
     if (first_error == ESP_OK) {
         first_error = nvs_commit(handle);
     }
@@ -425,6 +432,7 @@ esp_err_t nk_voice_config_load(void) {
         ESP_LOGI(kTag, "nvs_open read returned %s; using defaults", esp_err_to_name(err));
         // A first boot has no namespace yet. Defaults are a valid loaded state
         // for the UI, so do not report that expected condition as a failure.
+        nk_ble_notify_ir_pin();
         return err == ESP_ERR_NVS_NOT_FOUND ? ESP_OK : err;
     }
 
@@ -466,6 +474,12 @@ esp_err_t nk_voice_config_load(void) {
     if (nvs_get_u8(handle, kNvsKeyListenMode, &loaded_mode) != ESP_OK || !nk_listen_mode_valid(loaded_mode))
         loaded_mode = NK_LISTEN_MODE_PLUSH;
     s_listen_mode.store(loaded_mode);
+    uint8_t loaded_pin = s_ir_pin.load();
+    if (nvs_get_u8(handle, kNvsKeyIrPin, &loaded_pin) != ESP_OK)
+        loaded_pin = s_ir_pin.load();
+    else if (loaded_pin > 1)
+        loaded_pin = 0;
+    s_ir_pin.store(loaded_pin);
     nvs_close(handle);
 
     // Standard action label from older firmware enables the built-in catalog.
@@ -496,6 +510,7 @@ esp_err_t nk_voice_config_load(void) {
             ESP_LOGE(kTag, "failed to build default self introduction");
         }
     }
+    nk_ble_notify_ir_pin();
     ESP_LOGI(kTag, "voice config loaded from NVS");
     return ESP_OK;
 }
@@ -508,6 +523,27 @@ esp_err_t nk_voice_config_init(void) {
 
 bool nk_voice_config_get_swap_nod_tilt(void) { return s_swap_nod_tilt; }
 void nk_voice_config_set_swap_nod_tilt(bool enabled) { s_swap_nod_tilt = enabled; }
+
+uint8_t nk_voice_config_get_ir_pin(void) { return s_ir_pin.load(); }
+bool nk_voice_config_set_ir_pin(uint8_t pin)
+{
+    if (pin > 1) return false;
+    s_ir_pin.store(pin);
+    return true;
+}
+
+bool nk_voice_config_change_ir_pin(uint8_t pin)
+{
+    const uint8_t previous_pin = s_ir_pin.load();
+    if (!nk_voice_config_set_ir_pin(pin)) return false;
+    const esp_err_t err = nk_voice_config_save();
+    if (err != ESP_OK) {
+        s_ir_pin.store(previous_pin);
+        ESP_LOGW(kTag, "IR pin save failed: %s", esp_err_to_name(err));
+    }
+    nk_ble_notify_ir_pin();
+    return err == ESP_OK;
+}
 
 uint8_t nk_voice_config_get_listen_mode(void) { return s_listen_mode.load(); }
 bool nk_voice_config_set_listen_mode(uint8_t mode)

@@ -57,6 +57,7 @@ static bool s_model_subscribed = false;
 static uint16_t s_conn_handle = BLE_HS_CONN_HANDLE_NONE;
 static std::atomic<uint32_t> s_connection_generation{0};
 static bool s_stream_subscribed = false;
+static bool s_status_subscribed = false;
 static uint8_t s_own_addr_type = 0;
 
 static void start_advertising(void);
@@ -350,6 +351,11 @@ static int ctrl_access(uint16_t conn_handle, uint16_t attr_handle,
             return 0;
         }
 
+        case NK_CTRL_IR_PIN: {
+            if (len != 2 || !nk_voice_config_change_ir_pin(payload[1])) return BLE_ATT_ERR_INVALID_ATTR_VALUE_LEN;
+            return 0;
+        }
+
         case NK_CTRL_LISTEN_MODE: {
             if (len != 2 || !nk_voice_config_change_listen_mode(payload[1])) return BLE_ATT_ERR_INVALID_ATTR_VALUE_LEN;
             return 0;
@@ -524,6 +530,7 @@ static int gap_event(struct ble_gap_event *event, void *arg)
             nk_model_writer_disconnected(s_connection_generation.load());
             s_model_subscribed = false;
             s_stream_subscribed = false;
+            s_status_subscribed = false;
             nk_imu_set_streaming(false);
             start_advertising();
             return 0;
@@ -538,6 +545,8 @@ static int gap_event(struct ble_gap_event *event, void *arg)
             }
             if (event->subscribe.attr_handle == s_model_state_handle)
                 s_model_subscribed = event->subscribe.cur_notify != 0;
+            if (event->subscribe.attr_handle == s_status_handle)
+                s_status_subscribed = event->subscribe.cur_notify != 0;
             if (event->subscribe.attr_handle == s_status_handle &&
                 event->subscribe.cur_notify != 0) {
                 // STATUS はイベントが発生するまで何も送らないため、接続時点で
@@ -546,6 +555,7 @@ static int gap_event(struct ble_gap_event *event, void *arg)
                 nk_ble_notify_status_posture();
                 nk_ble_notify_swap_nod_tilt();
                 nk_ble_notify_listen_mode();
+                nk_ble_notify_ir_pin();
             }
             return 0;
 
@@ -735,7 +745,7 @@ bool nk_ble_notify_stream(const uint8_t *data, size_t len)
 
 static void notify_status(const uint8_t *data, size_t len)
 {
-    if (s_conn_handle == BLE_HS_CONN_HANDLE_NONE || s_status_handle == 0) {
+    if (s_conn_handle == BLE_HS_CONN_HANDLE_NONE || s_status_handle == 0 || !s_status_subscribed) {
         return;
     }
     struct os_mbuf *om = ble_hs_mbuf_from_flat(data, (uint16_t)len);
@@ -827,6 +837,12 @@ void nk_ble_notify_swap_nod_tilt(void)
         NK_STATUS_SWAP_NOD_TILT,
         static_cast<uint8_t>(nk_imu_swap_nod_tilt() ? 1 : 0),
     };
+    notify_status(buf, sizeof(buf));
+}
+
+void nk_ble_notify_ir_pin(void)
+{
+    const uint8_t buf[2] = {NK_STATUS_IR_PIN, nk_voice_config_get_ir_pin()};
     notify_status(buf, sizeof(buf));
 }
 

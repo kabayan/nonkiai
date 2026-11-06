@@ -27,6 +27,7 @@ idf_component_register(
         bt
         esp_timer
         esp_driver_rmt
+        esp_driver_gpio
         nvs_flash
         m5stack__m5unified
         joltwallet__littlefs

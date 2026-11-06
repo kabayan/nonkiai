@@ -35,6 +35,7 @@ void handle(char *line) {
     case nk::kSayMode: nk_voice_config_change_listen_mode(cmd.mode); return;
     case nk::kSayStatus:
         nk::Event("status").number("mode", nk_voice_config_get_listen_mode())
+            .number("ir_pin", nk_voice_config_get_ir_pin())
             .text("state", nk_voice_listen_state()).text("reason", nk_voice_listen_block_reason())
             .boolean("speaking", voice_player_is_playing()).boolean("standby_wanted", nk_imu_standby_wanted()).emit();
         return;

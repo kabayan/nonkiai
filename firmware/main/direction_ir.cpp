@@ -3,6 +3,8 @@
 
 #include <atomic>
 #include "driver/rmt_tx.h"
+#include "driver/gpio.h"
+#include "voice_config.h"
 #include "driver/rmt_encoder.h"
 #include "esp_log.h"
 #include "esp_rom_sys.h"
@@ -27,6 +29,9 @@ struct Request {
 };
 constexpr int64_t kNecMinPeriodUs = 108080;
 QueueHandle_t s_queue = nullptr;
+constexpr gpio_num_t kPins[] = {GPIO_NUM_47, GPIO_NUM_2};
+rmt_channel_handle_t s_channels[2] = {};
+// Only the worker changes s_tx, once per complete request.
 rmt_channel_handle_t s_tx = nullptr;
 rmt_encoder_handle_t s_encoder = nullptr;
 std::atomic<bool> s_busy{false};
@@ -135,18 +140,20 @@ void worker(void *)
     Request request;
     for (;;) {
         if (xQueueReceive(s_queue, &request, portMAX_DELAY) != pdTRUE) continue;
+        const uint8_t pin = nk_voice_config_get_ir_pin();
+        s_tx = s_channels[pin];
         uint8_t sent = 0;
         const esp_err_t err = send_hold(request, &sent);
         if (request.hold) {
-            ESP_LOGI(kTag, "TX hold request=%lu direction=%u mode=%u count=%u interval_ms=%u sent=%u result=%s",
+            ESP_LOGI(kTag, "TX hold request=%lu direction=%u mode=%u count=%u interval_ms=%u gpio=%d sent=%u result=%s",
                      static_cast<unsigned long>(request.id), request.direction, request.mode,
-                     request.count, request.interval_ms, sent, esp_err_to_name(err));
+                     request.count, request.interval_ms, static_cast<int>(kPins[pin]), sent, esp_err_to_name(err));
         } else {
-            ESP_LOGI(kTag, "TX %s request=%lu direction=%u value=0x%08lX count=%u sent=%u result=%s",
+            ESP_LOGI(kTag, "TX %s request=%lu direction=%u value=0x%08lX gpio=%d count=%u sent=%u result=%s",
                      request.automatic ? "auto" : "manual",
                      static_cast<unsigned long>(request.id), request.direction,
                      static_cast<unsigned long>(nk_ir_saved_value(request.direction)),
-                     request.count, sent, esp_err_to_name(err));
+                     static_cast<int>(kPins[pin]), request.count, sent, esp_err_to_name(err));
         }
         s_busy.store(false);
         // Automatic sends are not WebUI test results; the page must not see them.
@@ -172,22 +179,29 @@ esp_err_t enqueue(const Request &item)
 
 esp_err_t nk_ir_init(void)
 {
-    rmt_tx_channel_config_t channel = {};
-    channel.gpio_num = GPIO_NUM_2;
-    channel.clk_src = RMT_CLK_SRC_DEFAULT;
-    channel.resolution_hz = 1000000;
-    channel.mem_block_symbols = 64;
-    channel.trans_queue_depth = 1;
-    esp_err_t err = rmt_new_tx_channel(&channel, &s_tx);
-    if (err != ESP_OK) { s_ready.store(err); return err; }
-    rmt_carrier_config_t carrier = {};
-    carrier.frequency_hz = 38000;
-    carrier.duty_cycle = 0.33f;
-    err = rmt_apply_carrier(s_tx, &carrier);
+    // ESP32-S3 has four TX channel slots. Each 64-symbol allocation rounds
+    // up to two 48-symbol blocks, so these two outputs consume all four.
+    esp_err_t err = ESP_OK;
+    bool enabled[2] = {};
+    for (unsigned i = 0; i < 2 && err == ESP_OK; ++i) {
+        err = gpio_set_level(kPins[i], 0);
+        if (err == ESP_OK) err = gpio_set_direction(kPins[i], GPIO_MODE_OUTPUT);
+        rmt_tx_channel_config_t channel = {};
+        channel.gpio_num = kPins[i];
+        channel.clk_src = RMT_CLK_SRC_DEFAULT;
+        channel.resolution_hz = 1000000;
+        channel.mem_block_symbols = 64;
+        channel.trans_queue_depth = 1;
+        if (err == ESP_OK) err = rmt_new_tx_channel(&channel, &s_channels[i]);
+        rmt_carrier_config_t carrier = {};
+        carrier.frequency_hz = 38000;
+        carrier.duty_cycle = 0.33f;
+        if (err == ESP_OK) err = rmt_apply_carrier(s_channels[i], &carrier);
+        if (err == ESP_OK) err = rmt_enable(s_channels[i]);
+        enabled[i] = err == ESP_OK;
+    }
     rmt_copy_encoder_config_t encoder = {};
     if (err == ESP_OK) err = rmt_new_copy_encoder(&encoder, &s_encoder);
-    if (err == ESP_OK) err = rmt_enable(s_tx);
-    const bool enabled = err == ESP_OK;
     if (err == ESP_OK) {
         s_queue = xQueueCreate(1, sizeof(Request));
         if (!s_queue) err = ESP_ERR_NO_MEM;
@@ -196,13 +210,15 @@ esp_err_t nk_ir_init(void)
         err = ESP_ERR_NO_MEM;
     if (err != ESP_OK) {
         if (s_queue) { vQueueDelete(s_queue); s_queue = nullptr; }
-        if (enabled) rmt_disable(s_tx);
         if (s_encoder) { rmt_del_encoder(s_encoder); s_encoder = nullptr; }
-        rmt_del_channel(s_tx);
-        s_tx = nullptr;
+        for (unsigned i = 0; i < 2; ++i) {
+            if (enabled[i]) rmt_disable(s_channels[i]);
+            if (s_channels[i]) { rmt_del_channel(s_channels[i]); s_channels[i] = nullptr; }
+            gpio_set_level(kPins[i], 0);
+        }
     }
     s_ready.store(err);
-    ESP_LOGI(kTag, "external GPIO2 NEC TX init: %s", esp_err_to_name(err));
+    ESP_LOGI(kTag, "GPIO47/GPIO2 NEC TX init: %s", esp_err_to_name(err));
     return err;
 }
 

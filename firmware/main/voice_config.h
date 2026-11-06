@@ -91,6 +91,11 @@ bool nk_voice_config_set_listen_mode(uint8_t mode);
 // Shared BLE/serial mutation: save, notify and emit mode.
 bool nk_voice_config_change_listen_mode(uint8_t mode);
 
+// IR destination: 0=built-in GPIO47 (default), 1=Grove GPIO2.
+uint8_t nk_voice_config_get_ir_pin(void);
+bool nk_voice_config_set_ir_pin(uint8_t pin);
+bool nk_voice_config_change_ir_pin(uint8_t pin);
+
 // ぬいぐるみの名前。名前は音声設定とは独立して NVS に保持する。
 const char *nk_voice_config_get_name(void);
 esp_err_t nk_voice_config_set_name(const char *name);

@@ -36,6 +36,7 @@ void nk_ble_notify_status_detector_state(void);
 void nk_ble_notify_status_posture(void);
 void nk_ble_notify_swap_nod_tilt(void);
 void nk_ble_notify_listen_mode(void);
+void nk_ble_notify_ir_pin(void);
 
 // 全アクションの音声設定を STATUS characteristic 経由で 1 件ずつ順次 notify
 void nk_ble_notify_all_voice_configs(void);
