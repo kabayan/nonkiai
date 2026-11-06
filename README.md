@@ -23,6 +23,32 @@ idf.py build
 
 ## 実機への書き込み
 
+### ビルドせずに書く（いちばん手軽）
+
+ESP-IDF が無くても、ビルド済みの一式（`firmware/prebuilt/`）をそのまま書けます。中身は `idf.py flash` が書くものと同じです（ブートローダー・パーティション表・アプリ・LittleFS と、`firmware/data/` の声のモデル female2・声の値の記録・辞書・音声認識の重み）。どのソースのコミットからビルドしたかは `firmware/prebuilt/build-info.json` に書いてあります。
+
+どちらの方法でも ATOMS3R の今の中身は上書きされ、元には戻せません。
+
+**ブラウザで書く**（Python 3 と Chrome / Edge だけ）
+
+1. リポジトリのルートで `python3 tools/model_flasher_server.py` を実行し、http://localhost:8095/ を開きます。
+2. 「端末に USB で接続」で ATOMS3R のポートを選びます。
+3. 「全体を書く（idf.py flash と同じ）」で「中継サーバの一式を取得」を押し、「全体を書く」を押します。
+
+くわしくは下の「ブラウザから書き込む」を見てください。
+
+**esptool で書く**（コマンド 1 行）
+
+```sh
+pip install esptool
+cd firmware/prebuilt
+esptool.py --chip esp32s3 -p <PORT> write_flash @flash_args
+```
+
+`<PORT>` は ATOMS3R のシリアルポートです（Linux なら `/dev/ttyACM0`、Windows なら `COM3` など）。esptool v5 では `esptool --chip esp32s3 -p <PORT> write-flash @flash_args` とも書けます。書き終わると ATOMS3R が再起動します。
+
+### ファイルの場所
+
 書き込むファイルは、リポジトリの中の次の場所にあります。
 
 | ファイル | 中身 | 使う場面 |
@@ -36,6 +62,7 @@ idf.py build
 | `firmware/data/sanotts/k1_dict_4mb.bin` | 漢字の辞書 | `idf.py flash`・ブラウザ |
 | `firmware/data/stt32/weights_partition.bin` | 音声認識の重み | `idf.py flash` |
 | `firmware/build/nonkiact2_sampler.bin` | アプリ（ビルドすると作られる） | `idf.py flash`・ブラウザ |
+| `firmware/prebuilt/` | ビルド済みのブートローダー・パーティション表・アプリ・LittleFS と、書き込み先の一覧（`flash_args`・`flasher_args.json`） | ビルドせずに書く |
 
 ### USB で書き込む（初回）
 
@@ -73,7 +100,7 @@ PC の Chrome / Edge から USB（Web Serial）で ATOMS3R に書き込めます
 
 #### 全体を書く（`idf.py flash` と同じ一式）
 
-先に `firmware/` で `idf.py build` を済ませておきます。画面は `firmware/build/flasher_args.json` が並べるファイルを、`idf.py flash` と同じアドレスに書きます。
+画面は `firmware/build/flasher_args.json` が並べるファイルを、`idf.py flash` と同じアドレスに書きます。ビルドしていなければ（`firmware/build/` が無ければ）、ビルド済みの `firmware/prebuilt/flasher_args.json` を使います。
 
 1. 接続したあと、「全体を書く（idf.py flash と同じ）」の「中継サーバの一式を取得」を押します。ブートローダー・パーティション表・アプリ・声のモデルと声の値の記録・辞書・音声認識の重み・LittleFS が一覧に出ます。
 2. 「全体を書く」を押し、確認で OK を押します。全部で約 8 MB あるので数分かかります。書いたあとは、領域ごとに端末の中身を照合してから端末をリセットします。

@@ -269,6 +269,8 @@ class FullPathError(ValueError):
 
 def full_image():
     build = (ROOT / "firmware/build").resolve()
+    if not (build / "flasher_args.json").is_file():
+        build = (ROOT / "firmware/prebuilt").resolve()
     config = json.loads((build / "flasher_args.json").read_text())
     settings = config["flash_settings"]
     names = {int(config[name]["offset"], 0): name for name in
@@ -365,6 +367,8 @@ def make_handler(builder):
                 elif path in ("/api/app.bin", "/api/app.json", "/api/dict.bin"):
                     filename = (ROOT / "firmware" / ("data/sanotts/k1_dict_4mb.bin" if path == "/api/dict.bin"
                                                       else "build/nonkiact2_sampler.bin"))
+                    if path != "/api/dict.bin" and not filename.is_file():
+                        filename = ROOT / "firmware/prebuilt/nonkiact2_sampler.bin"
                     data = filename.read_bytes()
                     if path == "/api/app.json":
                         # ESP イメージヘッダ 24 B + セグメントヘッダ 8 B の後に esp_app_desc_t がある。

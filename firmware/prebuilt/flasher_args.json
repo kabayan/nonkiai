@@ -1,0 +1,71 @@
+{
+  "write_flash_args": [
+    "--flash_mode",
+    "dio",
+    "--flash_size",
+    "8MB",
+    "--flash_freq",
+    "80m"
+  ],
+  "flash_settings": {
+    "flash_mode": "dio",
+    "flash_size": "8MB",
+    "flash_freq": "80m"
+  },
+  "flash_files": {
+    "0x0": "bootloader.bin",
+    "0x10000": "nonkiact2_sampler.bin",
+    "0x8000": "partition-table.bin",
+    "0x7c3000": "littlefs.bin",
+    "0x1d0000": "../data/sanotts/female2-v2-excite-int8.bin",
+    "0x340000": "../data/sanotts/k1_dict_4mb.bin",
+    "0x630000": "../data/stt32/weights_partition.bin",
+    "0x33f000": "../data/sanotts/female2-v2-excite-record.bin"
+  },
+  "bootloader": {
+    "offset": "0x0",
+    "file": "bootloader.bin",
+    "encrypted": "false"
+  },
+  "app": {
+    "offset": "0x10000",
+    "file": "nonkiact2_sampler.bin",
+    "encrypted": "false"
+  },
+  "partition-table": {
+    "offset": "0x8000",
+    "file": "partition-table.bin",
+    "encrypted": "false"
+  },
+  "littlefs": {
+    "offset": "0x7c3000",
+    "file": "littlefs.bin",
+    "encrypted": "false"
+  },
+  "model": {
+    "offset": "0x1d0000",
+    "file": "../data/sanotts/female2-v2-excite-int8.bin",
+    "encrypted": "false"
+  },
+  "dict": {
+    "offset": "0x340000",
+    "file": "../data/sanotts/k1_dict_4mb.bin",
+    "encrypted": "false"
+  },
+  "stt32w": {
+    "offset": "0x630000",
+    "file": "../data/stt32/weights_partition.bin",
+    "encrypted": "false"
+  },
+  "model_record": {
+    "offset": "0x33f000",
+    "file": "../data/sanotts/female2-v2-excite-record.bin",
+    "encrypted": "false"
+  },
+  "extra_esptool_args": {
+    "after": "hard_reset",
+    "before": "default_reset",
+    "stub": true,
+    "chip": "esp32s3"
+  }
+}

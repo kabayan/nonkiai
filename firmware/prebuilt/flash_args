@@ -1,0 +1,9 @@
+--flash_mode dio --flash_freq 80m --flash_size 8MB
+0x0 bootloader.bin
+0x10000 nonkiact2_sampler.bin
+0x8000 partition-table.bin
+0x7c3000 littlefs.bin
+0x1d0000 ../data/sanotts/female2-v2-excite-int8.bin
+0x340000 ../data/sanotts/k1_dict_4mb.bin
+0x630000 ../data/stt32/weights_partition.bin
+0x33f000 ../data/sanotts/female2-v2-excite-record.bin

@@ -1,0 +1,54 @@
+{
+  "sourceCommit": "88a018e0daa887f6659fef9794bffdcdae680ef9",
+  "sourceDirty": false,
+  "files": [
+    {
+      "name": "bootloader.bin",
+      "address": "0x0",
+      "bytes": 22368,
+      "sha256": "2bc5166652452ee7da04656b594979cc05805944fe75edeba5d3db92b54a2d46"
+    },
+    {
+      "name": "nonkiact2_sampler.bin",
+      "address": "0x10000",
+      "bytes": 1406656,
+      "sha256": "4de8254a694d541eef2c0f2d232d8fcde8a9928ed077f11112dd3928e25fad23"
+    },
+    {
+      "name": "partition-table.bin",
+      "address": "0x8000",
+      "bytes": 3072,
+      "sha256": "89cf57b32087ca02be06a31d52cb1c229bc30ac564ec03707167d34a95e5c0a6"
+    },
+    {
+      "name": "littlefs.bin",
+      "address": "0x7c3000",
+      "bytes": 249856,
+      "sha256": "780c96282de67c1290555affb8f41becd87c79c8dd1f53ba6b1b5365233dba0a"
+    },
+    {
+      "name": "../data/sanotts/female2-v2-excite-int8.bin",
+      "address": "0x1d0000",
+      "bytes": 1476992,
+      "sha256": "a4ca57246302c98d2c72c26f519b85953a3dab09a2f16aa7a27054a77c999eb7"
+    },
+    {
+      "name": "../data/sanotts/k1_dict_4mb.bin",
+      "address": "0x340000",
+      "bytes": 3013752,
+      "sha256": "b7bb311bd99d5a67e24ccd4c40e927f8bf4e13dc79ed786c7b67c865f6dc73ac"
+    },
+    {
+      "name": "../data/stt32/weights_partition.bin",
+      "address": "0x630000",
+      "bytes": 1649232,
+      "sha256": "744dfbe8d2b191cecbdddfe3bd35823a49a7a88d5b31bc14333c425f75f2b8a5"
+    },
+    {
+      "name": "../data/sanotts/female2-v2-excite-record.bin",
+      "address": "0x33f000",
+      "bytes": 4096,
+      "sha256": "932e5d91d103b53214bdb6629bc8c3166453c01b511ae1d6a8cebf2ef8c0d499"
+    }
+  ]
+}
