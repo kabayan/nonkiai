@@ -7,6 +7,8 @@ import http.client
 import io
 import json
 import math
+import os
+import tempfile
 import re
 import threading
 import urllib.error
@@ -93,23 +95,78 @@ def read_flags(bundle):
         raise BuilderError("bundle の build-flags.json を読めません") from error
 
 
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 class ModelBuilder:
-    def __init__(self, base_url=DEFAULT_BUILDER, timeout=15):
+    def __init__(self, base_url=DEFAULT_BUILDER, timeout=15, cache_dir=None):
         parsed = urllib.parse.urlsplit(base_url)
         if base_url and (parsed.scheme not in ("http", "https") or not parsed.netloc or parsed.query or parsed.fragment):
             raise ValueError("model-builder の場所は http または https の URL にしてください")
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self.cache_dir = Path(cache_dir).expanduser() if cache_dir is not None else None
         self.cache = {}
         self.lock = threading.Lock()
+
+    def cache_read(self, path):
+        if self.cache_dir is not None:
+            try:
+                return (self.cache_dir / path).read_bytes()
+            except OSError:
+                pass
+        return None
+
+    def cache_write(self, path, data):
+        if self.cache_dir is None:
+            return
+        temporary = None
+        try:
+            target = self.cache_dir / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(dir=target.parent, delete=False) as stream:
+                temporary = stream.name
+                stream.write(data)
+            os.replace(temporary, target)
+        except OSError:
+            pass
+        finally:
+            if temporary is not None:
+                try:
+                    os.unlink(temporary)
+                except OSError:
+                    pass
+
+    def cached_flags(self, path):
+        data = self.cache_read(path)
+        if data is None:
+            return None
+        try:
+            flags = json.loads(data)
+            if (not isinstance(flags, dict) or type(flags.get("blobBytes")) is not int
+                    or not 0 < flags["blobBytes"] <= MAX_BLOB_BYTES
+                    or not isinstance(flags.get("blobSha256"), str)
+                    or not SHA256.fullmatch(flags["blobSha256"])
+                    or not isinstance(flags.get("model"), dict)
+                    or any(not re.fullmatch(r"\d+", str(flags["model"].get(key, ""))) for key in MODEL_KEYS)):
+                return None
+            return flags
+        except (ValueError, UnicodeError):
+            return None
 
     def fetch(self, path, limit):
         if not self.base_url:
             raise BuilderError("model-builder の URL が未設定です（--builder で指定）")
         request = urllib.request.Request(self.base_url + "/" + path, headers={"Accept": "*/*"}, method="GET")
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+            with urllib.request.build_opener(NoRedirect()).open(request, timeout=self.timeout) as response:
                 data = response.read(limit + 1)
+        except urllib.error.HTTPError as error:
+            if 300 <= error.code < 400:
+                raise BuilderError("model-builder がリダイレクトを返しました") from error
+            raise BuilderError("model-builder に届きません。起動状態と接続先を確認してください（" + self.base_url + "）") from error
         except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException) as error:
             raise BuilderError("model-builder に届きません。起動状態と接続先を確認してください（" + self.base_url + "）") from error
         if len(data) > limit:
@@ -135,15 +192,20 @@ class ModelBuilder:
                 continue
             if not isinstance(blob, dict) or not isinstance(blob.get("bytes"), (int, float)) or blob["bytes"] <= 0:
                 continue
-            key = (identifier, str(run.get("updatedAt", "")), blob["bytes"])
+            key = (self.base_url, identifier, run.get("updatedAt", ""), blob["bytes"])
+            flags_path = "flags/" + hashlib.sha256(json.dumps(key, ensure_ascii=False).encode()).hexdigest() + ".json"
             with self.lock:
                 flags = self.cache.get(key)
             try:
                 if flags is None:
+                    flags = self.cached_flags(flags_path)
+                if flags is None:
                     flags = read_flags(self.fetch("api/models/runs/" + identifier + "/model-bundle.zip", MAX_BLOB_BYTES + 1024 * 1024))
+                    self.cache_write(flags_path, json.dumps(flags).encode())
+                if flags is not None:
                     with self.lock:
                         # 同じ run の更新前のキャッシュを残さない。
-                        self.cache = {k: v for k, v in self.cache.items() if k[0] != identifier}
+                        self.cache = {k: v for k, v in self.cache.items() if k[1] != identifier}
                         self.cache[key] = flags
                 if flags["blobBytes"] != blob["bytes"]:
                     raise BuilderError("一覧と bundle の重みの大きさが一致しません")
@@ -167,9 +229,19 @@ class ModelBuilder:
         selected = next((run for run in self.runs()["runs"] if run["run"] == identifier), None)
         if selected is None:
             raise BuilderError("この run には書き込める重みがありません。一覧を更新してください")
+        weights_path = "weights/" + selected["blobSha256"] + ".bin"
+        data = self.cache_read(weights_path)
+        if data is not None:
+            if len(data) == selected["blobBytes"] and hashlib.sha256(data).hexdigest() == selected["blobSha256"]:
+                return data
+            try:
+                (self.cache_dir / weights_path).unlink()
+            except OSError:
+                pass
         data = self.fetch("api/models/runs/" + identifier + "/model-int8.bin", MAX_BLOB_BYTES)
         if len(data) != selected["blobBytes"] or hashlib.sha256(data).hexdigest() != selected["blobSha256"]:
             raise BuilderError("取得した重みが bundle の大きさ・SHA-256 と一致しません。一覧を更新してください")
+        self.cache_write(weights_path, data)
         return data
 
 
@@ -191,7 +263,45 @@ STATIC_FILES = {
 }
 
 
+class FullPathError(ValueError):
+    """一式の公開範囲外。"""
+
+
+def full_image():
+    build = (ROOT / "firmware/build").resolve()
+    config = json.loads((build / "flasher_args.json").read_text())
+    settings = config["flash_settings"]
+    names = {int(config[name]["offset"], 0): name for name in
+             ("bootloader", "app", "partition-table", "model", "dict", "stt32w", "model_record", "littlefs")
+             if name in config}
+    files, paths = [], {}
+    for offset, filename in config["flash_files"].items():
+        address = int(offset, 0)
+        name = names.get(address, offset)
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", name):
+            raise ValueError("不正なファイル名")
+        # flash_files の ../data は IDF の正規出力。firmware の外は公開しない。
+        path = (build / filename).resolve()
+        if not path.is_relative_to(build.parent):
+            raise FullPathError("不正なファイルパス")
+        paths[name] = path
+        files.append({"name": name, "address": address, "path": path})
+    return settings, files, paths
+
+
+def default_builder_url(override=None):
+    if override is not None:
+        return override
+    path = ROOT / "tools/model_builder_url.txt"
+    if path.exists():
+        lines = path.read_text(encoding="utf-8").splitlines()
+        return lines[0].strip() if lines else ""
+    return DEFAULT_BUILDER
+
+
 def make_handler(builder):
+    builders = {builder.base_url: builder}
+    builders_lock = threading.Lock()
     class Handler(BaseHTTPRequestHandler):
         def send_data(self, code, data, content_type):
             self.send_response(code)
@@ -206,14 +316,52 @@ def make_handler(builder):
         def send_json(self, code, obj):
             self.send_data(code, json.dumps(obj, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
 
+        def request_builder(self):
+            params = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query, keep_blank_values=True)
+            if "builder" not in params:
+                return builder
+            if self.headers.get("Sec-Fetch-Site") not in (None, "same-origin", "none"):
+                raise PermissionError("外部ページからの builder 指定は受け付けません")
+            url = params["builder"][0]
+            with builders_lock:
+                if url not in builders:
+                    builders[url] = ModelBuilder(url, timeout=builder.timeout, cache_dir=builder.cache_dir)
+                return builders[url]
+
         def do_GET(self):
             path = urllib.parse.urlsplit(self.path).path
             try:
                 if path in STATIC_FILES:
                     name, mime = STATIC_FILES[path]
                     self.send_data(200, (ROOT / "webui" / name).read_bytes(), mime)
+                elif path == "/api/full.json" or path.startswith("/api/full/"):
+                    name = path[len("/api/full/"):-4] if path.endswith(".bin") else None
+                    if path != "/api/full.json" and (not name or not re.fullmatch(r"[A-Za-z0-9_-]+", name)):
+                        self.send_json(404, {"error": "指定されたページはありません"})
+                        return
+                    settings, files, paths = full_image()
+                    if path == "/api/full.json":
+                        listing = []
+                        for file in files:
+                            data = file["path"].read_bytes()
+                            listing.append({"name": file["name"], "address": file["address"], "bytes": len(data),
+                                            "sha256": hashlib.sha256(data).hexdigest(),
+                                            "url": "/api/full/" + file["name"] + ".bin"})
+                        self.send_json(200, {"flashMode": settings["flash_mode"], "flashFreq": settings["flash_freq"],
+                                             "flashSize": settings["flash_size"], "files": listing})
+                    elif name in paths:
+                        self.send_data(200, paths[name].read_bytes(), "application/octet-stream")
+                    else:
+                        self.send_json(404, {"error": "指定されたページはありません"})
+                elif path == "/api/config.json":
+                    self.send_json(200, {"builder": builder.base_url})
                 elif path == "/api/runs":
-                    self.send_json(200, builder.runs())
+                    try:
+                        selected_builder = self.request_builder()
+                    except ValueError as error:
+                        self.send_json(400, {"error": str(error)})
+                        return
+                    self.send_json(200, selected_builder.runs())
                 elif path in ("/api/app.bin", "/api/app.json", "/api/dict.bin"):
                     filename = (ROOT / "firmware" / ("data/sanotts/k1_dict_4mb.bin" if path == "/api/dict.bin"
                                                       else "build/nonkiact2_sampler.bin"))
@@ -231,12 +379,21 @@ def make_handler(builder):
                     if not RUN_ID.fullmatch(identifier):
                         self.send_json(400, {"error": "run の名前が不正です"})
                         return
-                    self.send_data(200, builder.model(identifier), "application/octet-stream")
+                    try:
+                        selected_builder = self.request_builder()
+                    except ValueError as error:
+                        self.send_json(400, {"error": str(error)})
+                        return
+                    self.send_data(200, selected_builder.model(identifier), "application/octet-stream")
                 else:
                     self.send_json(404, {"error": "指定されたページはありません"})
+            except PermissionError as error:
+                self.send_json(403, {"error": str(error)})
+            except FullPathError:
+                self.send_json(404, {"error": "指定されたページはありません"})
             except BuilderError as error:
                 self.send_json(502, {"error": str(error)})
-            except (OSError, ValueError):
+            except (OSError, ValueError, KeyError, TypeError):
                 self.send_json(500, {"error": "画面またはモデルの読み込みに失敗しました"})
 
         do_HEAD = do_GET
@@ -259,14 +416,15 @@ def main():
     parser = argparse.ArgumentParser(description="声モデルの書き込み画面を localhost で開きます")
     parser.add_argument("--host", default="127.0.0.1", help="待ち受け先（既定：127.0.0.1）")
     parser.add_argument("--port", type=int, default=8095, help="ポート番号（既定：8095）")
-    parser.add_argument("--builder", default=DEFAULT_BUILDER, help="model-builder の URL（未指定なら model-builder の一覧を使いません）")
+    parser.add_argument("--builder", default=None, help="model-builder の URL（未指定なら tools/model_builder_url.txt）")
+    parser.add_argument("--cache-dir", default=str(Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "nonkiact2/model-flasher"), help="モデルのディスクキャッシュの置き場")
     args = parser.parse_args()
     try:
-        builder = ModelBuilder(args.builder)
+        builder = ModelBuilder(default_builder_url(args.builder), cache_dir=args.cache_dir)
         server = ThreadingHTTPServer((args.host, args.port), make_handler(builder))
     except (OSError, ValueError) as error:
         parser.exit(1, "中継サーバを起動できません。待ち受け先・ポート・接続先を確認してください：" + str(error) + "\n")
-    print(f"USB 書き込み画面（アプリ・モデル・辞書）：http://localhost:{server.server_port}/\nモデルの取得先：{builder.base_url}", flush=True)
+    print(f"USB 書き込み画面（アプリ・モデル・辞書）：http://localhost:{server.server_port}/\nモデルの取得先：{builder.base_url}\nキャッシュの置き場：{builder.cache_dir}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

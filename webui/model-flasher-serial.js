@@ -35,7 +35,7 @@
     const out = new Uint8Array(16), v = new DataView(out.buffer);
     [a0,b0,c0,d0].forEach((x,i) => v.setUint32(i*4,x,true)); return hex(out);
   }
-  function parsePartitions(input) {
+  function parsePartitionRows(input) {
     const data = bytes(input);
     if (data.length !== 0xc00) throw new Error('パーティション表の大きさが不正です');
     const v = new DataView(data.buffer, data.byteOffset, data.length), all = [], found = {};
@@ -61,7 +61,10 @@
     if (found.factory.type !== 0 || found.factory.subtype !== 0 || found.factory.address%0x10000 ||
         found.model.type !== 1 || found.model.subtype !== 0x40 || found.dict.type !== 1 || found.dict.subtype !== 0x41 || Object.values(found).some(p => p.flags !== 0))
       throw new Error('書き込み先の種類または属性が不正です');
-    return found;
+    return all;
+  }
+  function parsePartitions(input) {
+    return Object.fromEntries(parsePartitionRows(input).filter(p => ['factory','model','dict'].includes(p.name)).map(p => [p.name,p]));
   }
   async function appProblem(input) {
     const data = bytes(input);
@@ -264,5 +267,63 @@
       return {ok:true,warnings,completed,skipped,recommitted,pending:[]};
     } catch (error) { return {ok:false,warnings,error,phase,completed,skipped,recommitted,pending}; }
   }
-  return {validDisplayName,runDisplayName,fileDisplayName,inspect,check,appVersion,md5,parsePartitions,appProblem,readAppFlags,encodeVoiceSector,createPlan,run};
+  // 全体書き込みは端末の既存パーティション表に依存しない。
+  async function runFull(loader, image, options = {}) {
+    const completed = [], warnings = []; let pending = [], phase = '検証';
+    try {
+      const capacity = /^(\d+)(KB|MB)$/i.exec(image?.flashSize);
+      if (!capacity || !['dio','qio','dout','qout'].includes(image.flashMode) ||
+          !['20m','26m','40m','80m'].includes(image.flashFreq)) throw Error('フラッシュ設定が不正です');
+      const limit = Number(capacity[1]) * (capacity[2].toUpperCase() === 'MB' ? 1048576 : 1024);
+      if (!Number.isSafeInteger(limit) || limit <= 0 || !Array.isArray(image.files)) throw Error('一式が不正です');
+      const plan = image.files.map(f => ({target:f.name,address:f.address,bytes:bytes(f.bytes).slice()}))
+        .sort((a,b) => a.address-b.address);
+      pending = plan.map(p => p.target);
+      if (new Set(pending).size !== plan.length || [0,0x8000,0x10000].some(a => !plan.some(p => p.address === a)))
+        throw Error('必要なアドレスがないか名前が重複しています');
+      let end = 0, total = 0;
+      for (const p of plan) {
+        if (!Number.isSafeInteger(p.address) || p.address < end || p.address % SECTOR ||
+            !p.bytes.length || p.address+p.bytes.length > limit) throw Error('ファイルの位置・重なり・容量が不正です');
+        end = p.address + p.bytes.length; total += p.bytes.length;
+      }
+      if (total > limit) throw Error('一式がフラッシュに収まりません');
+      const boot = plan.find(p => p.address === 0);
+      if (boot.bytes.length <= 16) throw Error('ブートローダーが短すぎます');
+      const partitions = parsePartitionRows(plan.find(p => p.address === 0x8000).bytes);
+      if (options.eraseUncovered) {
+        const uncovered = partitions.filter(p => p.type === 1 &&
+          !plan.some(f => f.address < p.address+p.size && p.address < f.address+f.bytes.length));
+        for (const p of uncovered) {
+          if (p.address+p.size > limit || plan.some(f => f.target === p.name)) throw Error('消去領域が不正です');
+          plan.push({target:p.name,address:p.address,bytes:new Uint8Array(p.size).fill(255)});
+        }
+      }
+      const problem = await appProblem(plan.find(p => p.address === 0x10000).bytes);
+      if (problem) throw Error(problem);
+      // 古い表で新しい内容が見える期間を短くするため、表は最後に確定する。
+      plan.sort((a,b) => Number(a.address === 0x8000)-Number(b.address === 0x8000));
+      pending = plan.map(p => p.target);
+      for (const p of plan) {
+        phase = p.target; const started = Date.now();
+        await loader.writeFlash({fileArray:[{address:p.address,data:binaryString(p.bytes)}],
+          flashMode:image.flashMode,flashFreq:image.flashFreq,flashSize:image.flashSize,
+          compress:true,eraseAll:false,calculateMD5Hash:input => md5(bytes(input)),
+          reportProgress:(_index,written) => {
+            const elapsed = Math.max(0.001,(Date.now()-started)/1000), speed = written/elapsed;
+            options.onProgress?.({target:p.target,bytes:written,total:p.bytes.length,elapsed,speed,
+              remaining:(p.bytes.length-written)/(speed || 1)});
+          }});
+        // esptool-js はブートローダーの先頭設定を書き換える。先頭16 Bを除いて照合する。
+        const skip = p.address === 0 ? 16 : 0;
+        if (String(await loader.flashMd5sum(p.address+skip,p.bytes.length-skip)).toLowerCase() !== md5(p.bytes.subarray(skip)))
+          throw Error('書き込み後の MD5 が一致しません');
+        completed.push(p.target); pending = pending.filter(t => t !== p.target);
+      }
+      phase = 'リセット';
+      if (options.reset) await options.reset(loader); else await loader.after('hard_reset');
+      return {ok:true,phase,completed,pending,warnings};
+    } catch (error) { return {ok:false,error,phase,completed,pending,warnings}; }
+  }
+  return {validDisplayName,runDisplayName,fileDisplayName,inspect,check,appVersion,md5,parsePartitions,appProblem,readAppFlags,encodeVoiceSector,createPlan,run,runFull};
 });

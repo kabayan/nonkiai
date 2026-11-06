@@ -102,6 +102,7 @@
 <input id="appFile" type="file" accept=".bin"><p id="appState">未選択</p></fieldset>
 <fieldset id="modelTarget"><legend>モデル</legend>
 <label><input id="usemodel" type="checkbox">モデルを書く</label>
+<div><label for="builderUrl">model-builder の URL</label><input id="builderUrl" type="url"></div>
 <div><button id="btnRefreshRuns">model-builder の一覧を取得</button></div>
 <select id="runs"><option value="">モデルを選んでください</option></select><button id="btnLoadRun">選んだ重みを取得</button>
 <p id="catalogState"></p>
@@ -113,6 +114,11 @@
 <label for="dictFile">手元の辞書（.bin）を選択</label>
 <input id="dictFile" type="file" accept=".bin"><p id="dictState">未選択</p></fieldset>
 <pre id="compatibility"></pre></fieldset>
+<fieldset id="fullTarget"><legend>全体を書く（idf.py flash と同じ）</legend>
+<p>別のファームの端末にも使えます。今の設定を含む対象領域を上書きします。</p>
+<button id="btnFullFetch">中継サーバの一式を取得</button>
+<pre id="fullState">未取得</pre><button id="btnFullWrite" disabled>全体を書く</button>
+</fieldset>
 <fieldset><legend>3. 照合して書き込む</legend>
 <button id="btnCheck" disabled>照合</button><button id="btnWrite" disabled>書き込む</button>
 <p id="phase">準備待ち</p><pre id="hashResult">照合待ち</pre>

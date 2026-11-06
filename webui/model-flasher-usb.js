@@ -4,7 +4,7 @@ const C = ModelFlasherCore, S = ModelFlasherSerial;
 const $ = id => document.getElementById(id);
 const names = {app:'アプリ',model:'モデル',dict:'辞書',params:'声の値の記録'};
 let loader = null, transport = null, device = null, busy = false, checked = false, generation = 0;
-let runs = [];
+let runs = [], runsBuilder = '', fullImage = null;
 const selected = {};
 const size = n => `${Number(n).toLocaleString('ja-JP')} B`;
 const supported = Boolean(navigator.serial && window.isSecureContext);
@@ -20,8 +20,10 @@ const esptoolReady = supported ? import('https://unpkg.com/esptool-js@0.5.5/bund
 const log = text => { $('log').textContent += text + '\n'; };
 function items() { return Object.keys(selected).filter(k => $('use'+k).checked).map(k => selected[k]); }
 function update() {
+  $('btnFullFetch').disabled = busy;
+  $('btnFullWrite').disabled = !loader || !fullImage || busy;
   $('btnConnect').disabled = !supported || Boolean(moduleError) || busy || Boolean(loader);
-  $('btnDisconnect').disabled = !transport || busy && Boolean(device);
+  $('btnDisconnect').disabled = !transport || busy && (Boolean(device) || Boolean(fullImage));
   $('btnCheck').disabled = !device || busy || !items().length;
   $('btnWrite').disabled = !device || busy || !checked;
   for (const k of Object.keys(names).filter(k => k !== 'params')) {
@@ -54,7 +56,14 @@ async function connect() {
     const current = loader;
     await current.main();
     if (token !== generation) return;
-    device = await S.inspect(current);
+    try { device = await S.inspect(current); }
+    catch (error) {
+      if (token !== generation) return;
+      device = null;
+      $('deviceInfo').textContent = '未取得';
+      $('connection').textContent = `端末に nonkiact2 のパーティション表がありません（${error.message}）。下の『全体を書く』で idf.py flash と同じ一式を書けます`;
+      return;
+    }
     if (token !== generation) return;
     $('deviceInfo').textContent = `アプリの版：${device.version}\n` +
       Object.entries(device.partitions).map(([k,p]) => `${k}：0x${p.address.toString(16)} / ${size(p.size)}`).join('\n') + '\n' +
@@ -97,11 +106,26 @@ async function select(kind, read, name, manifest, displayName = S.fileDisplayNam
   } catch (error) { $(kind+'State').textContent = error.message; }
   finally { busy = false; update(); }
 }
+function builderRequest(path, builder = $('builderUrl').value.trim()) {
+  return path + (path.includes('?') ? '&' : '?') + 'builder=' + encodeURIComponent(builder);
+}
+$('builderUrl').addEventListener('input',() => {
+  runs = []; runsBuilder = ''; $('runs').textContent = '';
+  const option = document.createElement('option'); option.value = ''; option.textContent = 'モデルを選んでください';
+  $('runs').appendChild(option); $('runs').value = '';
+  $('catalogState').textContent = 'URL を変えたので一覧を取り直してください';
+});
+fetchLocal('/api/config.json').then(response => response.json()).then(config => {
+  if (!$('builderUrl').value) $('builderUrl').value = config.builder;
+}).catch(error => { $('catalogState').textContent = error.message; });
 async function refreshRuns() {
   if (busy) return;
   busy = true; update();
   try {
-    const catalog = await (await fetchLocal('/api/runs')).json(); runs = catalog.runs;
+    const builder = $('builderUrl').value.trim();
+    const catalog = await (await fetchLocal(builderRequest('/api/runs',builder))).json();
+    if (builder !== $('builderUrl').value.trim()) return;
+    runs = catalog.runs; runsBuilder = builder;
     $('runs').textContent = '';
     const empty = document.createElement('option'); empty.value = ''; empty.textContent = 'モデルを選んでください'; $('runs').appendChild(empty);
     runs.forEach((r,i) => {
@@ -140,6 +164,46 @@ async function write() {
   } catch (error) { $('result').textContent = '完了できません：'+error.message; }
   finally { busy = false; update(); }
 }
+async function fetchFull() {
+  if (busy) return;
+  fullImage = null; busy = true; update(); $('fullState').textContent = '一式を取得中';
+  try {
+    const meta = await (await fetchLocal('/api/full.json')).json(), files = [];
+    if (!Array.isArray(meta.files) || !meta.files.length) throw Error('一式が空です');
+    for (const file of meta.files) {
+      const bytes = new Uint8Array(await (await fetchLocal(file.url)).arrayBuffer());
+      if (bytes.length !== file.bytes || await C.sha256(bytes) !== file.sha256) throw Error(file.name+' の大きさ・SHA-256 が一致しません');
+      files.push({...file,bytes});
+    }
+    fullImage = {...meta,files};
+    $('fullState').textContent = files.map(f => `${f.name} / 0x${f.address.toString(16)} / ${size(f.bytes.length)} / SHA-256 ${f.sha256.slice(0,12)}`).join('\n');
+  } catch (error) { $('fullState').textContent = '取得できません：'+error.message; }
+  finally { busy = false; update(); }
+}
+async function writeFull() {
+  if (!loader || !fullImage || busy) return;
+  if (!confirm(device === null
+    ? '端末の今のファーム・設定・データは上書きまたは消去され、元に戻せません（nvs・phy_init・userdict も空にします）。保存せずに全体を書きますか？'
+    : 'idf.py flash と同じ一式を書きます。今のアプリ・モデル・辞書・STT・LittleFS は上書きされ元に戻せません。設定（nvs）とユーザー辞書（userdict）は残ります。書きますか？')) return;
+  busy = true; checked = false; update();
+  try {
+    const result = await S.runFull(loader,fullImage,{eraseUncovered:device === null,onProgress:p => {
+      $('phase').textContent = p.target+'を書き込み中'; $('progress').value = 100*p.bytes/p.total;
+      $('progressText').textContent = `${size(p.bytes)} / ${size(p.total)}（${Math.round(100*p.bytes/p.total)}%）`;
+      $('rate').textContent = `${size(Math.round(p.speed))}/秒・残り約 ${Math.ceil(p.remaining)} 秒`;
+    }});
+    $('hashResult').textContent = result.completed.map(k => `${k}：書き込み・MD5 照合成功`).join('\n');
+    if (!result.ok) throw Error(`${result.phase}：${result.error.message}。未完了：${result.pending.join('、')}`);
+    $('result').textContent = '完了しました。端末をリセットしました。新しい中身での起動を確認してください';
+    $('phase').textContent = '完了';
+  } catch (error) { $('result').textContent = '完了できません：'+error.message; }
+  finally {
+    try { await release(); $('connection').textContent = 'リセット後は再接続してください'; }
+    finally { busy = false; update(); }
+  }
+}
+$('btnFullFetch').addEventListener('click',fetchFull);
+$('btnFullWrite').addEventListener('click',writeFull);
 $('btnConnect').addEventListener('click',connect);
 $('btnDisconnect').addEventListener('click',async () => { try { await release(); } catch (e) { log(e.message); } $('connection').textContent = '切断しました'; });
 $('btnCheck').addEventListener('click',check); $('btnWrite').addEventListener('click',write);
@@ -161,7 +225,7 @@ $('btnDict').addEventListener('click',() => select('dict',async () => (await fet
 $('btnRefreshRuns').addEventListener('click',refreshRuns);
 $('btnLoadRun').addEventListener('click',() => {
   const run = runs[Number($('runs').value)]; if (!$('runs').value || !run) return;
-  return select('model',async () => (await fetchLocal(run.downloadUrl)).arrayBuffer(),run.run+'.bin',
+  return select('model',async () => (await fetchLocal(builderRequest(run.downloadUrl,runsBuilder))).arrayBuffer(),run.run+'.bin',
     {...run,voice:run.vnoise === undefined ? undefined : {vnoise:run.vnoise}}, S.runDisplayName(run));
 });
 if (!supported) { $('support').hidden = false; $('support').textContent = 'Web Serial が使えません。PC の Chrome / Edge で http://localhost:8095/ を開いてください（安全な接続が必要です）'; }
