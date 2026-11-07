@@ -549,7 +549,11 @@ static void katakana_to_hiragana(char *utf8) {
             }
             p += 3;
         } else {
-            p += utf8_codepoint_len(*p);
+            const size_t n = utf8_codepoint_len(*p);
+            for (size_t i = 1; i < n; ++i) {
+                if (!p[i]) return;
+            }
+            p += n;
         }
     }
 }
@@ -575,7 +579,7 @@ static void play_phrase_wav_fallback(const char *text) {
 
     size_t position = 0;
     size_t played = 0;
-    while (work[position] != '\0' && !s_abort_requested.load()) {
+    while (position < sizeof(work) && work[position] != '\0' && !s_abort_requested.load()) {
         if (work[position] == ' ' || work[position] == '\t') {
             position++;
             vTaskDelay(pdMS_TO_TICKS(50));
@@ -604,7 +608,11 @@ static void play_phrase_wav_fallback(const char *text) {
         }
         if (best_index == SIZE_MAX) {
             ESP_LOGW(kTag, "char map miss at byte %u: 0x%02X", (unsigned)position, (uint8_t)work[position]);
-            position += utf8_codepoint_len((uint8_t)work[position]);
+            const size_t n = utf8_codepoint_len((uint8_t)work[position]);
+            size_t i = 1;
+            while (i < n && position + i < sizeof(work) && work[position + i]) ++i;
+            if (i < n) break;
+            position += n;
             continue;
         }
 

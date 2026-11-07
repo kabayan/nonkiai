@@ -1002,17 +1002,27 @@
     tbody.innerHTML = '';
     voiceConfigs.forEach((item) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><code>${item.key}</code></td>
-        <td>${item.name}</td>
-        <td>
-          <input type="text" id="vtxt_${item.key}" value="${item.text || ''}" style="width:100%; max-width:280px;"
-                 onchange="updateVoiceConfigText('${item.key}', this.value)">
-        </td>
-        <td>
-          <button onclick="testSayConfig('${item.key}')">発声テスト</button>
-        </td>
-      `;
+      const keyCell = document.createElement('td');
+      const code = document.createElement('code');
+      code.textContent = item.key;
+      keyCell.appendChild(code);
+      const nameCell = document.createElement('td');
+      nameCell.textContent = item.name;
+      const textCell = document.createElement('td');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = 'vtxt_' + item.key;
+      input.value = item.text || '';
+      input.style.width = '100%';
+      input.style.maxWidth = '280px';
+      input.addEventListener('change', () => updateVoiceConfigText(item.key, input.value));
+      textCell.appendChild(input);
+      const buttonCell = document.createElement('td');
+      const button = document.createElement('button');
+      button.textContent = '発声テスト';
+      button.addEventListener('click', () => testSayConfig(item.key));
+      buttonCell.appendChild(button);
+      [keyCell, nameCell, textCell, buttonCell].forEach(cell => tr.appendChild(cell));
       tbody.appendChild(tr);
     });
   }

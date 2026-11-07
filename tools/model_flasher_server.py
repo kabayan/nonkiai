@@ -301,10 +301,40 @@ def default_builder_url(override=None):
     return DEFAULT_BUILDER
 
 
-def make_handler(builder):
+# 要求の記録に出す前に制御文字を \xNN にする（端末のエスケープシーケンスを実行させない）
+LOG_CONTROL_CHARS = {c: rf"\x{c:02x}" for c in (*range(0x20), *range(0x7f, 0xa0))}
+
+
+def make_handler(builder, host="127.0.0.1", port=8095):
     builders = {builder.base_url: builder}
     builders_lock = threading.Lock()
+    allowed_hosts = {"localhost", "127.0.0.1", "::1", host.strip("[]").lower()}
     class Handler(BaseHTTPRequestHandler):
+        def parse_request(self):
+            if not super().parse_request():
+                return False
+            hosts = self.headers.get_all("Host", [])
+            valid = False
+            if len(hosts) == 1:
+                authority = hosts[0]
+                try:
+                    parsed = urllib.parse.urlsplit("//" + authority)
+                    expected_port = port or self.server.server_port
+                    valid = (
+                        parsed.hostname in allowed_hosts
+                        and (parsed.port if parsed.port is not None else 80) == expected_port
+                        and parsed.username is None and parsed.password is None
+                        and not parsed.path and not parsed.query and not parsed.fragment
+                        and not any(c.isspace() for c in authority)
+                    )
+                except ValueError:
+                    pass
+            if not valid:
+                self.send_json(403, {"error": "許可されていない Host です"})
+                return False
+            return True
+
+
         def send_data(self, code, data, content_type):
             self.send_response(code)
             self.send_header("Content-Type", content_type)
@@ -408,7 +438,9 @@ def make_handler(builder):
         do_PUT = do_DELETE = do_PATCH = do_POST
 
         def log_request(self, code="-", size="-"):
-            print("要求：" + self.command + " " + self.path + "　応答：" + str(code), flush=True)
+            command = (self.command or "").translate(LOG_CONTROL_CHARS)
+            path = (getattr(self, "path", None) or "").translate(LOG_CONTROL_CHARS)
+            print("要求：" + command + " " + path + "　応答：" + str(code), flush=True)
 
         def log_message(self, format, *args):
             print("通信の処理中にエラーがありました", flush=True)
@@ -425,7 +457,7 @@ def main():
     args = parser.parse_args()
     try:
         builder = ModelBuilder(default_builder_url(args.builder), cache_dir=args.cache_dir)
-        server = ThreadingHTTPServer((args.host, args.port), make_handler(builder))
+        server = ThreadingHTTPServer((args.host, args.port), make_handler(builder, args.host, args.port))
     except (OSError, ValueError) as error:
         parser.exit(1, "中継サーバを起動できません。待ち受け先・ポート・接続先を確認してください：" + str(error) + "\n")
     print(f"USB 書き込み画面（アプリ・モデル・辞書）：http://localhost:{server.server_port}/\nモデルの取得先：{builder.base_url}\nキャッシュの置き場：{builder.cache_dir}", flush=True)
